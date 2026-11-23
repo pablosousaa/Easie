@@ -1,5 +1,6 @@
-import { TemplatesApp } from "@/components/TemplatesApp";
+import { redirect } from "next/navigation";
 
+/** Modelos virou ferramenta dentro de Gerar — sem aba/rota própria. */
 export default function ModelosPage() {
-  return <TemplatesApp />;
+  redirect("/gerar?ferramenta=modelos");
 }

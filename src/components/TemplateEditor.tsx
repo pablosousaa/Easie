@@ -189,7 +189,8 @@ export function TemplateEditor({ templates, onChange }: Props) {
                       ))}
                     </select>
                     <p className="helper">
-                      Na geração, o modelo desta categoria é preferido ao padrão.
+                      Organização na conta. Gerar ignora modelos da loja e usa
+                      sempre os 5 anúncios canônicos.
                     </p>
                   </div>
                   <div className="field">

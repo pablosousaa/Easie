@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
-import { ArrowRight, ListOrdered, Sparkles } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { ArrowRight, FileText, ListOrdered, Sparkles } from "lucide-react";
 import { ProductForm } from "./ProductForm";
 import { VariationCard } from "./VariationCard";
 import { EmptyState } from "./EmptyState";
+import { TemplatesApp } from "./TemplatesApp";
 import { useToast } from "./ToastProvider";
 import { useAuth } from "./AuthProvider";
 import type { Product, ProductDraft, TextVariation } from "@/lib/types";
@@ -22,9 +24,13 @@ import {
   subscribeStore,
   upsertLastProduct,
 } from "@/lib/storage";
+
 export function GeneratorApp() {
   const { showToast } = useToast();
   const { cloud, pushStore } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const store = useSyncExternalStore(
     subscribeStore,
     getStoreSnapshot,
@@ -32,6 +38,24 @@ export function GeneratorApp() {
   );
   const [generating, setGenerating] = useState(false);
   const [justGeneratedId, setJustGeneratedId] = useState<string | null>(null);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("ferramenta") === "modelos") {
+      setTemplatesOpen(true);
+    }
+  }, [searchParams]);
+
+  function openTemplates() {
+    setTemplatesOpen(true);
+  }
+
+  function closeTemplates() {
+    setTemplatesOpen(false);
+    if (searchParams.get("ferramenta") === "modelos") {
+      router.replace(pathname);
+    }
+  }
 
   async function persist(next: typeof store) {
     replaceStore(next);
@@ -94,10 +118,24 @@ export function GeneratorApp() {
   return (
     <div className="page">
       <header className="page-header">
-        <h1 className="page-title">Gerar</h1>
-        <p className="page-sub">
-          Cadastre o produto e gere as 5 variações (OFERTA IMPERDÍVEL …)
-        </p>
+        <div className="section-head">
+          <div>
+            <h1 className="page-title">Gerar</h1>
+            <p className="page-sub">
+              Cadastre o produto e gere as 5 variações (OFERTA IMPERDÍVEL …)
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={openTemplates}
+            aria-haspopup="dialog"
+            aria-expanded={templatesOpen}
+          >
+            <FileText size={16} strokeWidth={1.5} aria-hidden />
+            Modelos
+          </button>
+        </div>
       </header>
 
       <section className="section" aria-labelledby="produto-heading">
@@ -170,6 +208,25 @@ export function GeneratorApp() {
           </div>
         )}
       </section>
+
+      {templatesOpen ? (
+        <div
+          className="templates-sheet"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modelos-sheet-title"
+        >
+          <button
+            type="button"
+            className="templates-sheet__backdrop"
+            aria-label="Fechar"
+            onClick={closeTemplates}
+          />
+          <div className="templates-sheet__panel surface">
+            <TemplatesApp variant="sheet" onClose={closeTemplates} />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
