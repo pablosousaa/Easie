@@ -2,7 +2,7 @@
  * Create an Easie user manually (no public signup).
  *
  * Usage:
- *   npm run user:create -- --name "Pablo" --email pablo@example.com --password 'senha-segura'
+ *   npm run user:create -- --name "Pablo" --username pablo --password 'senha-segura'
  *
  * Env:
  *   DATABASE_PATH / DATABASE_URL — same as the app (default ./data/easie.db)
@@ -10,20 +10,17 @@
 
 import { createId } from "../src/lib/ids";
 import { hashPassword } from "../src/lib/password";
-import {
-  findUserByEmail,
-  insertUser,
-  seedDefaultTemplate,
-} from "../src/lib/user-data";
+import { findUserByUsername, insertUser, seedDefaultTemplate } from "../src/lib/user-data";
+import { isValidUsername, normalizeUsername } from "../src/lib/username";
 
 function usage(): never {
   console.error(`Usage:
-  npm run user:create -- --name "Nome" --email user@example.com --password 'min-6-chars'
+  npm run user:create -- --name "Nome" --username pablo --password 'min-6-chars'
 
 Options:
-  --name, -n       Display name (min 2)
-  --email, -e      E-mail (unique)
-  --password, -p   Password (min 6)
+  --name, -n         Display name (min 2)
+  --username, -u     Login username (unique, a-z 0-9 . _ -)
+  --password, -p     Password (min 6)
 `);
   process.exit(1);
 }
@@ -46,15 +43,15 @@ async function main() {
   if (argv.includes("--help") || argv.includes("-h")) usage();
 
   const name = argValue(argv, ["--name", "-n"])?.trim();
-  const emailRaw = argValue(argv, ["--email", "-e"])?.trim();
+  const usernameRaw = argValue(argv, ["--username", "-u"])?.trim();
   const password = argValue(argv, ["--password", "-p"]);
 
   if (!name || name.length < 2) {
     console.error("Erro: --name obrigatório (mín. 2 caracteres).");
     usage();
   }
-  if (!emailRaw || !emailRaw.includes("@")) {
-    console.error("Erro: --email obrigatório e válido.");
+  if (!usernameRaw) {
+    console.error("Erro: --username obrigatório.");
     usage();
   }
   if (!password || password.length < 6) {
@@ -62,23 +59,32 @@ async function main() {
     usage();
   }
 
-  const email = emailRaw.toLowerCase();
-  const existing = findUserByEmail(email);
+  const username = normalizeUsername(usernameRaw);
+  if (!isValidUsername(username)) {
+    console.error(
+      "Erro: username inválido. Use 2–32 chars: letras, números, . _ - (começa com letra ou número).",
+    );
+    process.exit(1);
+  }
+
+  const existing = findUserByUsername(username);
   if (existing) {
-    console.error(`Erro: já existe usuário com e-mail ${email} (id ${existing.id}).`);
+    console.error(
+      `Erro: já existe usuário com username "${username}" (id ${existing.id}).`,
+    );
     process.exit(1);
   }
 
   const id = createId("usr");
   const passwordHash = await hashPassword(password);
-  insertUser({ id, name, email, passwordHash, repostWindowDays: 7 });
+  insertUser({ id, name, username, passwordHash, repostWindowDays: 7 });
   seedDefaultTemplate(id);
 
   console.log("Usuário criado:");
-  console.log(`  id:    ${id}`);
-  console.log(`  name:  ${name}`);
-  console.log(`  email: ${email}`);
-  console.log("Entre em /conta com este e-mail e senha.");
+  console.log(`  id:       ${id}`);
+  console.log(`  name:     ${name}`);
+  console.log(`  username: ${username}`);
+  console.log("Entre em /conta com este usuário e senha.");
 }
 
 main().catch((err) => {

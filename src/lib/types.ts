@@ -85,7 +85,7 @@ export type EasieStore = {
 export type PublicUser = {
   id: string;
   name: string;
-  email: string;
+  username: string;
   repostWindowDays: number;
 };
 

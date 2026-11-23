@@ -62,7 +62,7 @@ function AccountAppInner() {
   );
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +71,7 @@ function AccountAppInner() {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const err = await login(email, password);
+    const err = await login(username, password);
     setBusy(false);
     if (err) {
       setError(err);
@@ -184,7 +184,7 @@ function AccountAppInner() {
             <p className="entity-card__title" style={{ margin: 0 }}>
               {user.name}
             </p>
-            <p className="helper">{user.email}</p>
+            <p className="helper">@{user.username}</p>
             {authMode === "dev" ? (
               <p className="warn-banner" role="status">
                 AUTH_SECRET não definido — segredo de desenvolvimento. Defina
@@ -217,17 +217,21 @@ function AccountAppInner() {
 
             <form className="stack-gap auth-form" onSubmit={handleAuth}>
               <div className="field">
-                <label className="label" htmlFor="acc-email">
-                  E-mail
+                <label className="label" htmlFor="acc-username">
+                  Usuário
                 </label>
                 <input
-                  id="acc-email"
+                  id="acc-username"
                   className="input"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="text"
+                  autoComplete="username"
+                  inputMode="text"
+                  spellCheck={false}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
+                  minLength={2}
+                  maxLength={32}
                   disabled={busy}
                   autoFocus
                 />

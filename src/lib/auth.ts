@@ -7,7 +7,7 @@ export { SESSION_COOKIE };
 
 type SessionPayload = {
   sub: string;
-  email: string;
+  username: string;
   name: string;
 };
 
@@ -24,7 +24,7 @@ export function isUsingDevAuthSecret(): boolean {
 }
 
 export async function createSessionToken(payload: SessionPayload): Promise<string> {
-  return new SignJWT({ email: payload.email, name: payload.name })
+  return new SignJWT({ username: payload.username, name: payload.name })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)
     .setIssuedAt()
@@ -37,10 +37,17 @@ export async function verifySessionToken(
 ): Promise<SessionPayload | null> {
   try {
     const { payload } = await jwtVerify(token, getSecret());
-    if (!payload.sub || typeof payload.email !== "string") return null;
+    if (!payload.sub) return null;
+    const username =
+      typeof payload.username === "string"
+        ? payload.username
+        : typeof payload.email === "string"
+          ? payload.email
+          : "";
+    if (!username) return null;
     return {
       sub: payload.sub,
-      email: payload.email,
+      username,
       name: typeof payload.name === "string" ? payload.name : "",
     };
   } catch {

@@ -18,7 +18,7 @@ export async function GET() {
     user: {
       id: user.id,
       name: user.name,
-      email: user.email,
+      username: user.username,
       repostWindowDays: user.repost_window_days,
     },
     authMode,

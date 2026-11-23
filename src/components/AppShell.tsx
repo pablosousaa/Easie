@@ -101,7 +101,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="saas-sidebar__foot">
             <p className="saas-sidebar__user">
               <span className="saas-sidebar__user-name">{user!.name}</span>
-              <span className="saas-sidebar__user-email">{user!.email}</span>
+              <span className="saas-sidebar__user-email">@{user!.username}</span>
             </p>
           </div>
         </aside>

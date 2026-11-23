@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { normalizeUsername, usernameFromEmail } from "@/lib/username";
 
 const globalForDb = globalThis as unknown as {
   easieSqlite?: DatabaseSync;
@@ -21,7 +22,8 @@ function ensureSchema(sqlite: DatabaseSync) {
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY NOT NULL,
       name TEXT NOT NULL,
-      email TEXT NOT NULL UNIQUE,
+      username TEXT NOT NULL UNIQUE,
+      email TEXT NOT NULL DEFAULT '',
       password_hash TEXT NOT NULL,
       repost_window_days INTEGER NOT NULL DEFAULT 7,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -146,6 +148,58 @@ function migrateSchema(sqlite: DatabaseSync) {
   if (!tplNames.has("category")) {
     sqlite.exec("ALTER TABLE templates ADD COLUMN category TEXT NOT NULL DEFAULT ''");
   }
+
+  migrateUsersToUsername(sqlite);
+}
+
+function migrateUsersToUsername(sqlite: DatabaseSync) {
+  const userCols = sqlite
+    .prepare("PRAGMA table_info(users)")
+    .all() as Array<{ name: string }>;
+  const userNames = new Set(userCols.map((c) => c.name));
+
+  // Fresh DBs already have username from ensureSchema.
+  if (!userNames.has("username")) {
+    sqlite.exec("ALTER TABLE users ADD COLUMN username TEXT NOT NULL DEFAULT ''");
+  }
+
+  const rows = sqlite
+    .prepare("SELECT id, name, email, username FROM users")
+    .all() as Array<{
+    id: string;
+    name: string;
+    email: string;
+    username: string;
+  }>;
+
+  const taken = new Set(
+    rows.map((r) => r.username.trim().toLowerCase()).filter(Boolean),
+  );
+
+  const update = sqlite.prepare("UPDATE users SET username = ? WHERE id = ?");
+  for (const row of rows) {
+    if (row.username.trim()) {
+      taken.add(row.username.trim().toLowerCase());
+      continue;
+    }
+    let base = row.email?.includes("@")
+      ? usernameFromEmail(row.email)
+      : normalizeUsername(row.name || "user");
+    if (base.length < 2) base = `user${row.id.slice(-4)}`;
+    let candidate = base.slice(0, 32);
+    let n = 2;
+    while (taken.has(candidate)) {
+      const suffix = `-${n}`;
+      candidate = `${base.slice(0, Math.max(1, 32 - suffix.length))}${suffix}`;
+      n += 1;
+    }
+    taken.add(candidate);
+    update.run(candidate, row.id);
+  }
+
+  sqlite.exec(
+    "CREATE UNIQUE INDEX IF NOT EXISTS users_username_uidx ON users(username)",
+  );
 }
 
 export function getSqlite(): DatabaseSync {

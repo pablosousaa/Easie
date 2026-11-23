@@ -72,35 +72,60 @@ function mapPosting(row: PostingRow): Posting {
   };
 }
 
-export function findUserById(id: string): UserRow | undefined {
-  const db = getSqlite();
-  return db.prepare("SELECT * FROM users WHERE id = ?").get(id) as
-    | UserRow
-    | undefined;
+function mapUserRow(row: UserRow | undefined): UserRow | undefined {
+  if (!row) return undefined;
+  return {
+    ...row,
+    username: row.username || "",
+    email: row.email ?? "",
+  };
 }
 
+export function findUserById(id: string): UserRow | undefined {
+  const db = getSqlite();
+  return mapUserRow(
+    db.prepare("SELECT * FROM users WHERE id = ?").get(id) as UserRow | undefined,
+  );
+}
+
+export function findUserByUsername(username: string): UserRow | undefined {
+  const db = getSqlite();
+  return mapUserRow(
+    db
+      .prepare("SELECT * FROM users WHERE username = ? COLLATE NOCASE")
+      .get(username) as UserRow | undefined,
+  );
+}
+
+/** @deprecated Prefer findUserByUsername. Kept for one-off admin scripts. */
 export function findUserByEmail(email: string): UserRow | undefined {
   const db = getSqlite();
-  return db.prepare("SELECT * FROM users WHERE email = ?").get(email) as
-    | UserRow
-    | undefined;
+  return mapUserRow(
+    db.prepare("SELECT * FROM users WHERE email = ?").get(email) as
+      | UserRow
+      | undefined,
+  );
 }
 
 export function insertUser(input: {
   id: string;
   name: string;
-  email: string;
+  username: string;
   passwordHash: string;
+  email?: string;
   repostWindowDays?: number;
 }) {
   const db = getSqlite();
+  // Synthetic email keeps legacy UNIQUE(email) happy on DBs created before username login.
+  const email = input.email?.trim() || `${input.username}@users.local`;
   db.prepare(
-    `INSERT INTO users (id, name, email, password_hash, repost_window_days)
-     VALUES (?, ?, ?, ?, ?)`,
+    `INSERT INTO users (id, name, username, email, password_hash, repost_window_days)
+     VALUES (?, ?, ?, ?, ?, ?)`,
   ).run(
     input.id,
     input.name,
-    input.email,
+    input.username,
+    email,
     input.passwordHash,
     input.repostWindowDays ?? 7,
   );
