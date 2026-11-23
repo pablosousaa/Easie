@@ -4,15 +4,15 @@ import {
   CheckCircle2,
   ClipboardList,
   Cloud,
-  Sparkles,
+  FileText,
   Users,
 } from "lucide-react";
 
 const FEATURES = [
   {
-    icon: Sparkles,
+    icon: FileText,
     title: "Textos em segundos",
-    body: "Gere 3 a 5 variações prontas para colar no Facebook — com o seu link de afiliado.",
+    body: "Gere 3 a 5 variações prontas para colar no Facebook, com o seu link de afiliado.",
   },
   {
     icon: Users,
@@ -35,7 +35,6 @@ export function LandingPage() {
   return (
     <div className="marketing">
       <header className="mkt-nav">
-        <div className="mkt-nav__fade" aria-hidden />
         <div className="mkt-nav__inner">
           <Link href="/" className="saas-logo">
             Easie<span>.</span>
@@ -50,7 +49,7 @@ export function LandingPage() {
             </Link>
             <Link href="/gerar" className="btn btn-primary btn-sm">
               Começar
-              <ArrowRight size={16} aria-hidden />
+              <ArrowRight size={16} strokeWidth={1.5} aria-hidden />
             </Link>
           </div>
         </div>
@@ -58,36 +57,36 @@ export function LandingPage() {
 
       <main>
         <section className="mkt-hero">
-          <p className="mkt-hero__badge animate-appear">
-            Afiliados · Mercado Livre · envio manual
-          </p>
-          <h1 className="mkt-hero__title animate-appear">
-            Divulgue ofertas nos grupos — sem bagunça e sem robô
-          </h1>
-          <p className="mkt-hero__sub animate-appear delay-1">
-            Gere textos variados, marque o que já postou e mantenha tudo na sua conta.
-            O envio no Facebook continua manual — como deve ser.
-          </p>
-          <div className="mkt-hero__cta animate-appear delay-2">
-            <Link href="/gerar" className="btn btn-primary btn-lg">
-              Abrir o workspace
-              <ArrowRight size={18} aria-hidden />
-            </Link>
-            <Link href="/conta" className="btn btn-secondary btn-lg">
-              Criar conta grátis
-            </Link>
+          <div className="mkt-hero__copy animate-appear">
+            <p className="mkt-hero__badge">Afiliados do Mercado Livre · envio manual</p>
+            <h1 className="mkt-hero__title">
+              Divulgue ofertas nos grupos — sem bagunça e sem robô
+            </h1>
+            <p className="mkt-hero__sub">
+              Gere textos variados, marque o que já postou e mantenha tudo na sua conta. O
+              envio no Facebook continua manual — como deve ser.
+            </p>
+            <div className="mkt-hero__cta">
+              <Link href="/gerar" className="btn btn-primary btn-lg">
+                Abrir o workspace
+                <ArrowRight size={18} strokeWidth={1.5} aria-hidden />
+              </Link>
+              <Link href="/conta" className="btn btn-secondary btn-lg">
+                Criar conta
+              </Link>
+            </div>
           </div>
 
-          <div className="mkt-mockup animate-appear delay-3">
+          <div className="mkt-mockup animate-appear delay-1" aria-hidden>
             <div className="mkt-mockup__frame">
               <div className="mkt-mockup__chrome">
                 <span />
                 <span />
                 <span />
-                <p>Easie · Gerar posts</p>
+                <p>Gerar posts</p>
               </div>
               <div className="mkt-mockup__body">
-                <div className="mkt-mockup__sidebar" aria-hidden>
+                <div className="mkt-mockup__sidebar">
                   <div className="is-on" />
                   <div />
                   <div />
@@ -98,7 +97,7 @@ export function LandingPage() {
                   <div className="mkt-mockup__bar" />
                   <div className="mkt-mockup__bar short" />
                   <div className="mkt-mockup__cards">
-                    <div className="mkt-mockup__card">
+                    <div className="mkt-mockup__card is-active">
                       <span>Variação 1</span>
                       <em />
                       <em />
@@ -112,7 +111,6 @@ export function LandingPage() {
                 </div>
               </div>
             </div>
-            <div className="mkt-glow" aria-hidden />
           </div>
         </section>
 
@@ -126,7 +124,7 @@ export function LandingPage() {
             {FEATURES.map(({ icon: Icon, title, body }) => (
               <li key={title} className="mkt-feature">
                 <div className="mkt-feature__icon" aria-hidden>
-                  <Icon size={20} />
+                  <Icon size={18} strokeWidth={1.5} />
                 </div>
                 <h3>{title}</h3>
                 <p>{body}</p>
@@ -140,35 +138,37 @@ export function LandingPage() {
           <h2 className="mkt-section__title">Três passos por produto</h2>
           <ol className="mkt-steps">
             <li>
-              <strong>1.</strong> Cadastre o link, nome e preço
+              <strong>1</strong> Cadastre o link, nome e preço
             </li>
             <li>
-              <strong>2.</strong> Gere variações e copie
+              <strong>2</strong> Gere variações e copie
             </li>
             <li>
-              <strong>3.</strong> Abra o grupo, cole e marque postado
+              <strong>3</strong> Abra o grupo, cole e marque postado
             </li>
           </ol>
           <ul className="mkt-checks">
             <li>
-              <CheckCircle2 size={18} aria-hidden /> Sem automação do Facebook
+              <CheckCircle2 size={18} strokeWidth={1.5} aria-hidden /> Sem automação do
+              Facebook
             </li>
             <li>
-              <CheckCircle2 size={18} aria-hidden /> Dados só da sua conta
+              <CheckCircle2 size={18} strokeWidth={1.5} aria-hidden /> Dados só da sua conta
             </li>
             <li>
-              <CheckCircle2 size={18} aria-hidden /> Backup CSV quando quiser
+              <CheckCircle2 size={18} strokeWidth={1.5} aria-hidden /> Backup CSV quando
+              quiser
             </li>
           </ul>
         </section>
 
         <section className="mkt-cta">
           <div className="mkt-cta__box">
-            <h2>Pronto para organizar a divulgação?</h2>
+            <h2>Pronto para organizar a divulgação</h2>
             <p>Abra o workspace e gere o primeiro post em menos de um minuto.</p>
             <Link href="/gerar" className="btn btn-primary btn-lg">
               Começar agora
-              <ArrowRight size={18} aria-hidden />
+              <ArrowRight size={18} strokeWidth={1.5} aria-hidden />
             </Link>
           </div>
         </section>

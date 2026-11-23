@@ -58,7 +58,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className={`saas-nav-item${current ? " is-active" : ""}`}
                 aria-current={current ? "page" : undefined}
               >
-                <Icon size={18} strokeWidth={current ? 2.25 : 1.75} aria-hidden />
+                <Icon size={18} strokeWidth={1.5} aria-hidden />
                 {label}
               </Link>
             );
@@ -103,7 +103,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className={`saas-tab${current ? " is-active" : ""}`}
                 aria-current={current ? "page" : undefined}
               >
-                <Icon size={20} strokeWidth={current ? 2.25 : 1.75} aria-hidden />
+                <Icon size={18} strokeWidth={1.5} aria-hidden />
                 {label}
               </Link>
             );
