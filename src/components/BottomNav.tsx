@@ -2,11 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, Sparkles } from "lucide-react";
+import {
+  FileText,
+  ListOrdered,
+  Sparkles,
+  Users,
+  UserRound,
+} from "lucide-react";
 
 const TABS = [
   { href: "/", label: "Gerar", icon: Sparkles },
+  { href: "/fila", label: "Fila", icon: ListOrdered },
+  { href: "/grupos", label: "Grupos", icon: Users },
   { href: "/modelos", label: "Modelos", icon: FileText },
+  { href: "/conta", label: "Conta", icon: UserRound },
 ] as const;
 
 export function BottomNav() {
@@ -17,7 +26,9 @@ export function BottomNav() {
       <div className="bottom-nav__inner">
         {TABS.map(({ href, label, icon: Icon }) => {
           const current =
-            href === "/" ? pathname === "/" : pathname.startsWith(href);
+            href === "/"
+              ? pathname === "/"
+              : pathname === href || pathname.startsWith(`${href}/`);
           return (
             <Link
               key={href}
@@ -25,7 +36,7 @@ export function BottomNav() {
               className="tab"
               aria-current={current ? "page" : undefined}
             >
-              <Icon size={22} strokeWidth={current ? 2.25 : 1.75} aria-hidden />
+              <Icon size={20} strokeWidth={current ? 2.25 : 1.75} aria-hidden />
               {label}
             </Link>
           );

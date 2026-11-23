@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { AuthProvider } from "@/components/AuthProvider";
 import { BottomNav } from "@/components/BottomNav";
 import { ToastProvider } from "@/components/ToastProvider";
 import "./globals.css";
@@ -12,9 +14,9 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Easie — Gerador de posts de afiliado",
+  title: "Easie — Divulgação de afiliados",
   description:
-    "Monte textos de divulgação para grupos do Facebook a partir do seu produto do Mercado Livre.",
+    "Monte textos, controle grupos do Facebook e acompanhe o checklist de divulgação do Mercado Livre.",
   applicationName: "Easie",
 };
 
@@ -29,10 +31,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="pt-BR" className={`${plusJakarta.variable} h-full antialiased`}>
       <body className="min-h-full">
         <ToastProvider>
-          <div className="app-shell">
-            {children}
-            <BottomNav />
-          </div>
+          <AuthProvider>
+            <div className="app-shell">
+              {children}
+              <Suspense fallback={null}>
+                <BottomNav />
+              </Suspense>
+            </div>
+          </AuthProvider>
         </ToastProvider>
       </body>
     </html>
