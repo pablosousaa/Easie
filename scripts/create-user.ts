@@ -5,13 +5,19 @@
  *   npm run user:create -- --name "Pablo" --username pablo --password 'senha-segura'
  *
  * Env:
- *   DATABASE_PATH / DATABASE_URL — same as the app (default ./data/easie.db)
+ *   DATABASE_URL=postgres://…   (Neon / Vercel Postgres — production)
+ *   or DATABASE_PATH / file:…   (local SQLite, default ./data/easie.db)
  */
 
 import { createId } from "../src/lib/ids";
 import { hashPassword } from "../src/lib/password";
-import { findUserByUsername, insertUser, seedDefaultTemplate } from "../src/lib/user-data";
+import {
+  findUserByUsername,
+  insertUser,
+  seedDefaultTemplate,
+} from "../src/lib/user-data";
 import { isValidUsername, normalizeUsername } from "../src/lib/username";
+import { ensureDbReady, usePostgres } from "../src/lib/db";
 
 function usage(): never {
   console.error(`Usage:
@@ -67,7 +73,14 @@ async function main() {
     process.exit(1);
   }
 
-  const existing = findUserByUsername(username);
+  await ensureDbReady();
+  console.log(
+    usePostgres()
+      ? "DB: Postgres (DATABASE_URL)"
+      : "DB: SQLite local (DATABASE_PATH / default ./data/easie.db)",
+  );
+
+  const existing = await findUserByUsername(username);
   if (existing) {
     console.error(
       `Erro: já existe usuário com username "${username}" (id ${existing.id}).`,
@@ -77,8 +90,8 @@ async function main() {
 
   const id = createId("usr");
   const passwordHash = await hashPassword(password);
-  insertUser({ id, name, username, passwordHash, repostWindowDays: 7 });
-  seedDefaultTemplate(id);
+  await insertUser({ id, name, username, passwordHash, repostWindowDays: 7 });
+  await seedDefaultTemplate(id);
 
   console.log("Usuário criado:");
   console.log(`  id:       ${id}`);

@@ -9,7 +9,7 @@ export async function GET() {
     return NextResponse.json({ user: null, authMode });
   }
 
-  const user = findUserById(session.sub);
+  const user = await findUserById(session.sub);
   if (!user) {
     return NextResponse.json({ user: null, authMode });
   }

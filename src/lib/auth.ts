@@ -81,6 +81,6 @@ export async function getSession(): Promise<SessionPayload | null> {
 export async function requireUser() {
   const session = await getSession();
   if (!session) return null;
-  const user = findUserById(session.sub);
+  const user = await findUserById(session.sub);
   return user ?? null;
 }

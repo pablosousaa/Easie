@@ -29,7 +29,7 @@ export async function PATCH(request: Request) {
         { status: 400 },
       );
     }
-    updateCategoryEnabled(body.mlCategoryId, body.enabled);
+    await updateCategoryEnabled(body.mlCategoryId, body.enabled);
     const data = await getTrendingList({ forceRefresh: true });
     return NextResponse.json({
       categories: data.categories,

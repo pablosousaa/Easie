@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const user = findUserByUsername(username);
+  const user = await findUserByUsername(username);
   if (!user) {
     return NextResponse.json(
       { error: "Usuário ou senha incorretos." },

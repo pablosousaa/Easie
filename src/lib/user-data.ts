@@ -1,4 +1,4 @@
-import { getSqlite } from "./db";
+import { ensureDbReady, sqlAll, sqlGet, sqlRun } from "./db";
 import type {
   GroupRow,
   PostingRow,
@@ -81,109 +81,124 @@ function mapUserRow(row: UserRow | undefined): UserRow | undefined {
   };
 }
 
-export function findUserById(id: string): UserRow | undefined {
-  const db = getSqlite();
+async function ready() {
+  await ensureDbReady();
+}
+
+export async function findUserById(id: string): Promise<UserRow | undefined> {
+  await ready();
   return mapUserRow(
-    db.prepare("SELECT * FROM users WHERE id = ?").get(id) as UserRow | undefined,
+    await sqlGet<UserRow>("SELECT * FROM users WHERE id = ?", [id]),
   );
 }
 
-export function findUserByUsername(username: string): UserRow | undefined {
-  const db = getSqlite();
+export async function findUserByUsername(
+  username: string,
+): Promise<UserRow | undefined> {
+  await ready();
   return mapUserRow(
-    db
-      .prepare("SELECT * FROM users WHERE username = ? COLLATE NOCASE")
-      .get(username) as UserRow | undefined,
+    await sqlGet<UserRow>(
+      "SELECT * FROM users WHERE LOWER(username) = LOWER(?)",
+      [username],
+    ),
   );
 }
 
-/** @deprecated Prefer findUserByUsername. Kept for one-off admin scripts. */
-export function findUserByEmail(email: string): UserRow | undefined {
-  const db = getSqlite();
+/** @deprecated Prefer findUserByUsername. */
+export async function findUserByEmail(
+  email: string,
+): Promise<UserRow | undefined> {
+  await ready();
   return mapUserRow(
-    db.prepare("SELECT * FROM users WHERE email = ?").get(email) as
-      | UserRow
-      | undefined,
+    await sqlGet<UserRow>("SELECT * FROM users WHERE email = ?", [email]),
   );
 }
 
-export function insertUser(input: {
+export async function insertUser(input: {
   id: string;
   name: string;
   username: string;
   passwordHash: string;
   email?: string;
   repostWindowDays?: number;
-}) {
-  const db = getSqlite();
-  // Synthetic email keeps legacy UNIQUE(email) happy on DBs created before username login.
+}): Promise<void> {
+  await ready();
   const email = input.email?.trim() || `${input.username}@users.local`;
-  db.prepare(
-    `INSERT INTO users (id, name, username, email, password_hash, repost_window_days)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-  ).run(
-    input.id,
-    input.name,
-    input.username,
-    email,
-    input.passwordHash,
-    input.repostWindowDays ?? 7,
+  await sqlRun(
+    `INSERT INTO users (id, name, username, email, password_hash, repost_window_days, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      input.id,
+      input.name,
+      input.username,
+      email,
+      input.passwordHash,
+      input.repostWindowDays ?? 7,
+      nowIso(),
+    ],
   );
 }
 
-export function seedDefaultTemplate(userId: string) {
-  const db = getSqlite();
-  const existing = db
-    .prepare("SELECT id FROM templates WHERE user_id = ? LIMIT 1")
-    .get(userId);
+export async function seedDefaultTemplate(userId: string): Promise<void> {
+  await ready();
+  const existing = await sqlGet<{ id: string }>(
+    "SELECT id FROM templates WHERE user_id = ? LIMIT 1",
+    [userId],
+  );
   if (existing) return;
-  const insert = db.prepare(
+
+  const tpl = createDefaultTemplate(createId("tpl"));
+  await sqlRun(
     `INSERT INTO templates (id, user_id, name, content, is_default, updated_at, category)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [tpl.id, userId, tpl.name, tpl.content, 1, nowIso(), tpl.category ?? ""],
   );
-  const tpl = createDefaultTemplate(createId("tpl"));
-  insert.run(tpl.id, userId, tpl.name, tpl.content, 1, nowIso(), tpl.category ?? "");
   const seasonal = createSeasonalTemplate(createId("tpl"));
-  insert.run(
-    seasonal.id,
-    userId,
-    seasonal.name,
-    seasonal.content,
-    0,
-    nowIso(),
-    seasonal.category ?? "",
+  await sqlRun(
+    `INSERT INTO templates (id, user_id, name, content, is_default, updated_at, category)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      seasonal.id,
+      userId,
+      seasonal.name,
+      seasonal.content,
+      0,
+      nowIso(),
+      seasonal.category ?? "",
+    ],
   );
 }
 
-export function loadUserStore(userId: string): EasieStore {
-  const db = getSqlite();
-  const user = findUserById(userId);
-  const productRows = db
-    .prepare(
-      `SELECT * FROM products WHERE user_id = ?
-       ORDER BY queue_order ASC, created_at ASC`,
-    )
-    .all(userId) as ProductRow[];
-  const templateRows = db
-    .prepare("SELECT * FROM templates WHERE user_id = ?")
-    .all(userId) as TemplateRow[];
-  const groupRows = db
-    .prepare(
-      `SELECT * FROM groups WHERE user_id = ? ORDER BY created_at ASC`,
-    )
-    .all(userId) as GroupRow[];
-  const postingRows = db
-    .prepare("SELECT * FROM postings WHERE user_id = ?")
-    .all(userId) as PostingRow[];
+export async function loadUserStore(userId: string): Promise<EasieStore> {
+  await ready();
+  const user = await findUserById(userId);
+  const productRows = await sqlAll<ProductRow>(
+    `SELECT * FROM products WHERE user_id = ?
+     ORDER BY queue_order ASC, created_at ASC`,
+    [userId],
+  );
+  const templateRows = await sqlAll<TemplateRow>(
+    "SELECT * FROM templates WHERE user_id = ?",
+    [userId],
+  );
+  const groupRows = await sqlAll<GroupRow>(
+    `SELECT * FROM groups WHERE user_id = ? ORDER BY created_at ASC`,
+    [userId],
+  );
+  const postingRows = await sqlAll<PostingRow>(
+    "SELECT * FROM postings WHERE user_id = ?",
+    [userId],
+  );
 
   const mappedTemplates =
     templateRows.length > 0
       ? templateRows.map(mapTemplate)
       : [createDefaultTemplate(), createSeasonalTemplate()];
 
-  const prefs = db
-    .prepare("SELECT taken_ids, hidden_ids FROM user_trending_prefs WHERE user_id = ?")
-    .get(userId) as { taken_ids: string; hidden_ids: string } | undefined;
+  const prefs = await sqlGet<{ taken_ids: string; hidden_ids: string }>(
+    "SELECT taken_ids, hidden_ids FROM user_trending_prefs WHERE user_id = ?",
+    [userId],
+  );
 
   function parseIds(raw: string | undefined): string[] {
     if (!raw) return [];
@@ -212,67 +227,77 @@ export function loadUserStore(userId: string): EasieStore {
   };
 }
 
-export function migrateLocalData(userId: string, payload: MigratePayload) {
-  const db = getSqlite();
+export async function migrateLocalData(
+  userId: string,
+  payload: MigratePayload,
+): Promise<void> {
+  await ready();
 
   if (payload.settings?.repostWindowDays) {
-    db.prepare("UPDATE users SET repost_window_days = ? WHERE id = ?").run(
+    await sqlRun("UPDATE users SET repost_window_days = ? WHERE id = ?", [
       Math.max(1, payload.settings.repostWindowDays),
       userId,
-    );
+    ]);
   }
 
-  const existingTemplates = db
-    .prepare("SELECT id FROM templates WHERE user_id = ?")
-    .all(userId) as Array<{ id: string }>;
+  const existingTemplates = await sqlAll<{ id: string }>(
+    "SELECT id FROM templates WHERE user_id = ?",
+    [userId],
+  );
 
   if (
     payload.templates &&
     payload.templates.length > 0 &&
     existingTemplates.length <= 1
   ) {
-    db.prepare("DELETE FROM templates WHERE user_id = ?").run(userId);
+    await sqlRun("DELETE FROM templates WHERE user_id = ?", [userId]);
     for (const tpl of payload.templates) {
-      db.prepare(
+      await sqlRun(
         `INSERT INTO templates (id, user_id, name, content, is_default, updated_at, category)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      ).run(
-        tpl.id || createId("tpl"),
-        userId,
-        tpl.name,
-        tpl.content,
-        tpl.isDefault ? 1 : 0,
-        tpl.updatedAt || nowIso(),
-        tpl.category ?? "",
+        [
+          tpl.id || createId("tpl"),
+          userId,
+          tpl.name,
+          tpl.content,
+          tpl.isDefault ? 1 : 0,
+          tpl.updatedAt || nowIso(),
+          tpl.category ?? "",
+        ],
       );
     }
-    const after = db
-      .prepare("SELECT id, is_default FROM templates WHERE user_id = ?")
-      .all(userId) as Array<{ id: string; is_default: number }>;
+    const after = await sqlAll<{ id: string; is_default: number }>(
+      "SELECT id, is_default FROM templates WHERE user_id = ?",
+      [userId],
+    );
     if (after.length > 0 && !after.some((t) => t.is_default)) {
-      db.prepare("UPDATE templates SET is_default = 1 WHERE id = ?").run(
+      await sqlRun("UPDATE templates SET is_default = 1 WHERE id = ?", [
         after[0].id,
-      );
+      ]);
     }
   }
 
   if (payload.groups) {
     for (const g of payload.groups) {
       const id = g.id || createId("grp");
-      const exists = db.prepare("SELECT id FROM groups WHERE id = ?").get(id);
+      const exists = await sqlGet<{ id: string }>(
+        "SELECT id FROM groups WHERE id = ?",
+        [id],
+      );
       if (exists) continue;
-      db.prepare(
+      await sqlRun(
         `INSERT INTO groups (id, user_id, name, link, theme, rules, active, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(
-        id,
-        userId,
-        g.name,
-        g.link,
-        g.theme ?? "",
-        g.rules ?? "",
-        g.active !== false ? 1 : 0,
-        g.createdAt || nowIso(),
+        [
+          id,
+          userId,
+          g.name,
+          g.link,
+          g.theme ?? "",
+          g.rules ?? "",
+          g.active !== false ? 1 : 0,
+          g.createdAt || nowIso(),
+        ],
       );
     }
   }
@@ -280,29 +305,33 @@ export function migrateLocalData(userId: string, payload: MigratePayload) {
   if (payload.products) {
     for (const p of payload.products) {
       const id = p.id || createId("prd");
-      const exists = db.prepare("SELECT id FROM products WHERE id = ?").get(id);
+      const exists = await sqlGet<{ id: string }>(
+        "SELECT id FROM products WHERE id = ?",
+        [id],
+      );
       if (exists) continue;
-      db.prepare(
+      await sqlRun(
         `INSERT INTO products (
            id, user_id, affiliate_link, name, price, free_shipping, fast_delivery,
            status, queue_order, created_at, completed_at, clicks, sales, commission, category
          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(
-        id,
-        userId,
-        p.affiliateLink,
-        p.name,
-        p.price,
-        p.freeShipping ? 1 : 0,
-        p.fastDelivery ? 1 : 0,
-        p.status ?? "queued",
-        p.queueOrder ?? 0,
-        p.createdAt || nowIso(),
-        p.completedAt ?? null,
-        p.clicks ?? 0,
-        p.sales ?? 0,
-        p.commission ?? "",
-        p.category ?? "",
+        [
+          id,
+          userId,
+          p.affiliateLink,
+          p.name,
+          p.price,
+          p.freeShipping ? 1 : 0,
+          p.fastDelivery ? 1 : 0,
+          p.status ?? "queued",
+          p.queueOrder ?? 0,
+          p.createdAt || nowIso(),
+          p.completedAt ?? null,
+          p.clicks ?? 0,
+          p.sales ?? 0,
+          p.commission ?? "",
+          p.category ?? "",
+        ],
       );
     }
   }
@@ -310,23 +339,27 @@ export function migrateLocalData(userId: string, payload: MigratePayload) {
   if (payload.postings) {
     for (const post of payload.postings) {
       const id = post.id || createId("pst");
-      const exists = db.prepare("SELECT id FROM postings WHERE id = ?").get(id);
+      const exists = await sqlGet<{ id: string }>(
+        "SELECT id FROM postings WHERE id = ?",
+        [id],
+      );
       if (exists) continue;
-      db.prepare(
+      await sqlRun(
         `INSERT INTO postings (
            id, user_id, product_id, group_id, status, variation_text,
            variation_index, posted_at, created_at
          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(
-        id,
-        userId,
-        post.productId,
-        post.groupId,
-        post.status,
-        post.variationText ?? "",
-        post.variationIndex ?? 0,
-        post.postedAt,
-        post.createdAt || nowIso(),
+        [
+          id,
+          userId,
+          post.productId,
+          post.groupId,
+          post.status,
+          post.variationText ?? "",
+          post.variationIndex ?? 0,
+          post.postedAt,
+          post.createdAt || nowIso(),
+        ],
       );
     }
   }
@@ -338,131 +371,139 @@ export function migrateLocalData(userId: string, payload: MigratePayload) {
     payload.lastProduct.affiliateLink.trim()
   ) {
     const lp = payload.lastProduct;
-    db.prepare(
+    await sqlRun(
       `INSERT INTO products (
          id, user_id, affiliate_link, name, price, free_shipping, fast_delivery,
          status, queue_order, created_at, completed_at, clicks, sales, commission, category
        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', 0, ?, NULL, 0, 0, '', ?)`,
-    ).run(
-      createId("prd"),
-      userId,
-      lp.affiliateLink,
-      lp.name,
-      lp.price,
-      lp.freeShipping ? 1 : 0,
-      lp.fastDelivery ? 1 : 0,
-      nowIso(),
-      lp.category ?? "",
+      [
+        createId("prd"),
+        userId,
+        lp.affiliateLink,
+        lp.name,
+        lp.price,
+        lp.freeShipping ? 1 : 0,
+        lp.fastDelivery ? 1 : 0,
+        nowIso(),
+        lp.category ?? "",
+      ],
     );
   }
 }
 
-export function replaceUserStore(userId: string, store: EasieStore) {
-  const db = getSqlite();
+export async function replaceUserStore(
+  userId: string,
+  store: EasieStore,
+): Promise<void> {
+  await ready();
 
-  db.prepare("UPDATE users SET repost_window_days = ? WHERE id = ?").run(
+  await sqlRun("UPDATE users SET repost_window_days = ? WHERE id = ?", [
     Math.max(1, store.settings.repostWindowDays || 7),
     userId,
-  );
+  ]);
 
-  db.prepare(
+  await sqlRun(
     `INSERT INTO user_trending_prefs (user_id, taken_ids, hidden_ids)
      VALUES (?, ?, ?)
-     ON CONFLICT(user_id) DO UPDATE SET
+     ON CONFLICT (user_id) DO UPDATE SET
        taken_ids = excluded.taken_ids,
        hidden_ids = excluded.hidden_ids`,
-  ).run(
-    userId,
-    JSON.stringify(store.trendingTakenIds ?? []),
-    JSON.stringify(store.trendingHiddenIds ?? []),
+    [
+      userId,
+      JSON.stringify(store.trendingTakenIds ?? []),
+      JSON.stringify(store.trendingHiddenIds ?? []),
+    ],
   );
 
-  db.prepare("DELETE FROM postings WHERE user_id = ?").run(userId);
-  db.prepare("DELETE FROM products WHERE user_id = ?").run(userId);
-  db.prepare("DELETE FROM groups WHERE user_id = ?").run(userId);
-  db.prepare("DELETE FROM templates WHERE user_id = ?").run(userId);
+  await sqlRun("DELETE FROM postings WHERE user_id = ?", [userId]);
+  await sqlRun("DELETE FROM products WHERE user_id = ?", [userId]);
+  await sqlRun("DELETE FROM groups WHERE user_id = ?", [userId]);
+  await sqlRun("DELETE FROM templates WHERE user_id = ?", [userId]);
 
   for (const tpl of store.templates) {
-    db.prepare(
+    await sqlRun(
       `INSERT INTO templates (id, user_id, name, content, is_default, updated_at, category)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      tpl.id,
-      userId,
-      tpl.name,
-      tpl.content,
-      tpl.isDefault ? 1 : 0,
-      tpl.updatedAt || nowIso(),
-      tpl.category ?? "",
+      [
+        tpl.id,
+        userId,
+        tpl.name,
+        tpl.content,
+        tpl.isDefault ? 1 : 0,
+        tpl.updatedAt || nowIso(),
+        tpl.category ?? "",
+      ],
     );
   }
   if (store.templates.length === 0) {
-    seedDefaultTemplate(userId);
+    await seedDefaultTemplate(userId);
   }
 
   for (const g of store.groups) {
-    db.prepare(
+    await sqlRun(
       `INSERT INTO groups (id, user_id, name, link, theme, rules, active, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      g.id,
-      userId,
-      g.name,
-      g.link,
-      g.theme,
-      g.rules,
-      g.active ? 1 : 0,
-      g.createdAt || nowIso(),
+      [
+        g.id,
+        userId,
+        g.name,
+        g.link,
+        g.theme,
+        g.rules,
+        g.active ? 1 : 0,
+        g.createdAt || nowIso(),
+      ],
     );
   }
 
   for (const p of store.products) {
-    db.prepare(
+    await sqlRun(
       `INSERT INTO products (
          id, user_id, affiliate_link, name, price, free_shipping, fast_delivery,
          status, queue_order, created_at, completed_at, clicks, sales, commission, category
        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      p.id,
-      userId,
-      p.affiliateLink,
-      p.name,
-      p.price,
-      p.freeShipping ? 1 : 0,
-      p.fastDelivery ? 1 : 0,
-      p.status,
-      p.queueOrder,
-      p.createdAt || nowIso(),
-      p.completedAt,
-      p.clicks ?? 0,
-      p.sales ?? 0,
-      p.commission ?? "",
-      p.category ?? "",
+      [
+        p.id,
+        userId,
+        p.affiliateLink,
+        p.name,
+        p.price,
+        p.freeShipping ? 1 : 0,
+        p.fastDelivery ? 1 : 0,
+        p.status,
+        p.queueOrder,
+        p.createdAt || nowIso(),
+        p.completedAt,
+        p.clicks ?? 0,
+        p.sales ?? 0,
+        p.commission ?? "",
+        p.category ?? "",
+      ],
     );
   }
 
   for (const post of store.postings) {
-    db.prepare(
+    await sqlRun(
       `INSERT INTO postings (
          id, user_id, product_id, group_id, status, variation_text,
          variation_index, posted_at, created_at
        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      post.id,
-      userId,
-      post.productId,
-      post.groupId,
-      post.status,
-      post.variationText,
-      post.variationIndex,
-      post.postedAt,
-      post.createdAt || nowIso(),
+      [
+        post.id,
+        userId,
+        post.productId,
+        post.groupId,
+        post.status,
+        post.variationText,
+        post.variationIndex,
+        post.postedAt,
+        post.createdAt || nowIso(),
+      ],
     );
   }
 }
 
-/** Deletes the user row; FK CASCADE removes products, groups, templates, postings. */
-export function deleteUserAccount(userId: string) {
-  const db = getSqlite();
-  db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+export async function deleteUserAccount(userId: string): Promise<void> {
+  await ready();
+  await sqlRun("DELETE FROM users WHERE id = ?", [userId]);
 }
