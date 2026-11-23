@@ -1272,8 +1272,11 @@ a.btn {
   min-height: 100dvh;
   display: grid;
   place-items: center;
+  justify-items: center;
+  gap: 12px;
   color: var(--text-secondary);
   font-size: 14px;
+  padding: 24px;
 }
 
 .saas-sidebar {

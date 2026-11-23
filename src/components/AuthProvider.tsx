@@ -9,7 +9,14 @@ import {
   type ReactNode,
 } from "react";
 import type { EasieStore, MigratePayload, PublicUser } from "@/lib/types";
-import { exportMigratePayload, hydrateStore, getStoreSnapshot } from "@/lib/storage";
+import {
+  clearPersistedStore,
+  exportMigratePayload,
+  getStoreSnapshot,
+  hydrateStore,
+  peekLocalStoreForMigrate,
+  resetMemoryStore,
+} from "@/lib/storage";
 
 type AuthContextValue = {
   user: PublicUser | null;
@@ -33,7 +40,12 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function fetchMe() {
   const res = await fetch("/api/auth/me", { credentials: "include" });
-  if (!res.ok) return { user: null as PublicUser | null, authMode: null as "dev" | "secure" | null };
+  if (!res.ok) {
+    return {
+      user: null as PublicUser | null,
+      authMode: null as "dev" | "secure" | null,
+    };
+  }
   return (await res.json()) as {
     user: PublicUser | null;
     authMode: "dev" | "secure";
@@ -58,14 +70,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthMode(me.authMode);
     if (me.user) {
       const store = await fetchCloudStore();
-      if (store) {
-        const local = getStoreSnapshot();
-        hydrateStore({
-          ...store,
-          lastProduct: local.lastProduct ?? store.lastProduct,
-          variations: local.variations.length ? local.variations : store.variations,
-        });
-      }
+      if (store) hydrateStore(store);
+    } else {
+      // No guest workspace — keep localStorage only for optional signup migrate.
+      resetMemoryStore();
     }
     setLoading(false);
   }, []);
@@ -96,10 +104,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ email, password }),
     });
     const data = (await res.json()) as { error?: string; user?: PublicUser };
-    if (!res.ok) return data.error ?? "Falha no login.";
+    if (!res.ok) return data.error ?? "Falha no login";
     setUser(data.user ?? null);
     const store = await fetchCloudStore();
     if (store) hydrateStore(store);
+    else resetMemoryStore();
     return null;
   }, []);
 
@@ -110,9 +119,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: string,
       migrateLocal: boolean,
     ) => {
-      const migrate: MigratePayload | undefined = migrateLocal
-        ? exportMigratePayload(getStoreSnapshot())
-        : undefined;
+      let migrate: MigratePayload | undefined;
+      if (migrateLocal) {
+        const peeked = peekLocalStoreForMigrate();
+        migrate = peeked
+          ? exportMigratePayload(peeked)
+          : exportMigratePayload(getStoreSnapshot());
+      }
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         credentials: "include",
@@ -120,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ name, email, password, migrate }),
       });
       const data = (await res.json()) as { error?: string; user?: PublicUser };
-      if (!res.ok) return data.error ?? "Falha ao criar conta.";
+      if (!res.ok) return data.error ?? "Falha ao criar conta";
       setUser(data.user ?? null);
       const store = await fetchCloudStore();
       if (store) hydrateStore(store);
@@ -132,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     setUser(null);
+    clearPersistedStore();
   }, []);
 
   const deleteAccount = useCallback(async () => {
@@ -140,8 +154,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       credentials: "include",
     });
     const data = (await res.json()) as { error?: string };
-    if (!res.ok) return data.error ?? "Não foi possível excluir a conta.";
+    if (!res.ok) return data.error ?? "Não foi possível excluir a conta";
     setUser(null);
+    clearPersistedStore();
     return null;
   }, []);
 
