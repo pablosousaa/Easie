@@ -1,12 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import * as schema from "./schema";
+import { DatabaseSync } from "node:sqlite";
 
 const globalForDb = globalThis as unknown as {
-  easieSqlite?: Database.Database;
-  easieDb?: ReturnType<typeof drizzle<typeof schema>>;
+  easieSqlite?: DatabaseSync;
 };
 
 function resolveDbPath(): string {
@@ -19,7 +16,7 @@ function resolveDbPath(): string {
   return path.join(process.cwd(), "data", "easie.db");
 }
 
-function ensureSchema(sqlite: Database.Database) {
+function ensureSchema(sqlite: DatabaseSync) {
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY NOT NULL,
@@ -84,23 +81,20 @@ function ensureSchema(sqlite: Database.Database) {
   `);
 }
 
-function createClient() {
-  const dbPath = resolveDbPath();
-  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-  const sqlite = new Database(dbPath);
-  sqlite.pragma("journal_mode = WAL");
-  sqlite.pragma("foreign_keys = ON");
-  ensureSchema(sqlite);
-  return { sqlite, db: drizzle(sqlite, { schema }) };
-}
-
-export function getDb() {
-  if (!globalForDb.easieDb || !globalForDb.easieSqlite) {
-    const client = createClient();
-    globalForDb.easieSqlite = client.sqlite;
-    globalForDb.easieDb = client.db;
+export function getSqlite(): DatabaseSync {
+  if (!globalForDb.easieSqlite) {
+    const dbPath = resolveDbPath();
+    fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+    const sqlite = new DatabaseSync(dbPath);
+    sqlite.exec("PRAGMA journal_mode = WAL;");
+    sqlite.exec("PRAGMA foreign_keys = ON;");
+    ensureSchema(sqlite);
+    globalForDb.easieSqlite = sqlite;
   }
-  return globalForDb.easieDb;
+  return globalForDb.easieSqlite;
 }
 
-export type Db = ReturnType<typeof getDb>;
+/** @deprecated Prefer getSqlite(); kept for call-site clarity. */
+export function getDb(): DatabaseSync {
+  return getSqlite();
+}

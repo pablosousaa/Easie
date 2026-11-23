@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { createSessionToken, setSessionCookie } from "@/lib/auth";
-import { getDb } from "@/lib/db";
-import { users } from "@/lib/db/schema";
 import { verifyPassword } from "@/lib/password";
+import { findUserByEmail } from "@/lib/user-data";
 
 const bodySchema = z.object({
   email: z.string().trim().email(),
@@ -25,13 +23,12 @@ export async function POST(request: Request) {
   }
 
   const email = parsed.data.email.toLowerCase();
-  const db = getDb();
-  const user = db.select().from(users).where(eq(users.email, email)).get();
+  const user = findUserByEmail(email);
   if (!user) {
     return NextResponse.json({ error: "E-mail ou senha incorretos." }, { status: 401 });
   }
 
-  const ok = await verifyPassword(parsed.data.password, user.passwordHash);
+  const ok = await verifyPassword(parsed.data.password, user.password_hash);
   if (!ok) {
     return NextResponse.json({ error: "E-mail ou senha incorretos." }, { status: 401 });
   }
@@ -48,7 +45,7 @@ export async function POST(request: Request) {
       id: user.id,
       name: user.name,
       email: user.email,
-      repostWindowDays: user.repostWindowDays,
+      repostWindowDays: user.repost_window_days,
     },
   });
 }

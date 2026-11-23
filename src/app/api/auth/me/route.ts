@@ -1,25 +1,17 @@
 import { NextResponse } from "next/server";
 import { getSession, isUsingDevAuthSecret } from "@/lib/auth";
-import { getDb } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { findUserById } from "@/lib/user-data";
 
 export async function GET() {
+  const authMode = isUsingDevAuthSecret() ? "dev" : "secure";
   const session = await getSession();
   if (!session) {
-    return NextResponse.json({
-      user: null,
-      authMode: isUsingDevAuthSecret() ? "dev" : "secure",
-    });
+    return NextResponse.json({ user: null, authMode });
   }
 
-  const db = getDb();
-  const user = db.select().from(users).where(eq(users.id, session.sub)).get();
+  const user = findUserById(session.sub);
   if (!user) {
-    return NextResponse.json({
-      user: null,
-      authMode: isUsingDevAuthSecret() ? "dev" : "secure",
-    });
+    return NextResponse.json({ user: null, authMode });
   }
 
   return NextResponse.json({
@@ -27,8 +19,8 @@ export async function GET() {
       id: user.id,
       name: user.name,
       email: user.email,
-      repostWindowDays: user.repostWindowDays,
+      repostWindowDays: user.repost_window_days,
     },
-    authMode: isUsingDevAuthSecret() ? "dev" : "secure",
+    authMode,
   });
 }
