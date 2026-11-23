@@ -156,14 +156,120 @@ function AccountAppInner() {
 
   const guest = !loading && !user;
 
+  if (guest || loading) {
+    return (
+      <div className="page page--auth">
+        <header className="auth-hero">
+          <h1 className="auth-hero__brand" aria-label="Easie">
+            Easie<span className="auth-hero__dot">.</span>
+          </h1>
+        </header>
+
+        <section className="section" aria-labelledby="login-heading">
+          {loading ? (
+            <div
+              className="surface stack-gap"
+              aria-busy="true"
+              aria-live="polite"
+            >
+              <div className="skeleton skeleton--line" style={{ width: "40%" }} />
+              <div className="skeleton skeleton--line" style={{ width: "70%" }} />
+              <div className="skeleton skeleton--btn" />
+              <span className="sr-only">Carregando sessão</span>
+            </div>
+          ) : (
+            <div className="surface auth-card">
+              <div className="callout callout--next" style={{ marginBottom: 16 }}>
+                <div className="callout__body">
+                  <p className="callout__title" id="login-heading">
+                    Acesso restrito
+                  </p>
+                  <p className="helper">
+                    Não há cadastro público. Peça uma conta ao administrador do
+                    Easie.
+                  </p>
+                </div>
+              </div>
+
+              <form className="stack-gap auth-form" onSubmit={handleAuth}>
+                <div className="field">
+                  <label className="label" htmlFor="acc-username">
+                    Usuário
+                  </label>
+                  <input
+                    id="acc-username"
+                    className="input"
+                    type="text"
+                    autoComplete="username"
+                    inputMode="text"
+                    spellCheck={false}
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                    minLength={2}
+                    maxLength={32}
+                    disabled={busy}
+                    autoFocus
+                  />
+                </div>
+                <div className="field">
+                  <label className="label" htmlFor="acc-password">
+                    Senha
+                  </label>
+                  <input
+                    id="acc-password"
+                    className={`input${error ? " input--error" : ""}`}
+                    type="password"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    disabled={busy}
+                    aria-invalid={Boolean(error)}
+                    aria-describedby={error ? "acc-error" : "acc-hint"}
+                  />
+                </div>
+                {error ? (
+                  <p id="acc-error" className="field__error" role="alert">
+                    {error}
+                  </p>
+                ) : (
+                  <p id="acc-hint" className="helper">
+                    Depois do login você vai para o workspace. Dados ficam na
+                    nuvem, só na sua conta.
+                  </p>
+                )}
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-block"
+                  disabled={busy}
+                  aria-busy={busy}
+                >
+                  {busy ? (
+                    <Loader2 size={18} className="spin" aria-hidden />
+                  ) : (
+                    <LogIn size={18} aria-hidden />
+                  )}
+                  {busy ? "Aguarde…" : "Entrar"}
+                </button>
+              </form>
+            </div>
+          )}
+        </section>
+      </div>
+    );
+  }
+
+  // guest/loading already returned — user is signed in here
+  const account = user!;
+
   return (
-    <div className={`page${guest ? " page--auth" : ""}`}>
+    <div className="page">
       <header className="page-header">
         <h1 className="page-title">Conta</h1>
         <p className="page-sub">
-          {user
-            ? "Sessão, backup e preferências — dados só da sua conta"
-            : "Entre com a conta criada pelo administrador"}
+          Sessão, backup e preferências — dados só da sua conta
         </p>
       </header>
 
@@ -171,228 +277,139 @@ function AccountAppInner() {
         <h2 id="session-heading" className="section-title">
           Sessão
         </h2>
-        {loading ? (
-          <div className="surface stack-gap" aria-busy="true" aria-live="polite">
-            <div className="skeleton skeleton--line" style={{ width: "40%" }} />
-            <div className="skeleton skeleton--line" style={{ width: "70%" }} />
-            <div className="skeleton skeleton--btn" />
-            <span className="sr-only">Carregando sessão</span>
+        <div className="surface stack-gap">
+          <p className="helper" style={{ margin: 0 }}>
+            Conectado como
+          </p>
+          <p className="entity-card__title" style={{ margin: 0 }}>
+            {account.name}
+          </p>
+          <p className="helper">@{account.username}</p>
+          {authMode === "dev" ? (
+            <p className="warn-banner" role="status">
+              AUTH_SECRET não definido — segredo de desenvolvimento. Defina
+              AUTH_SECRET em produção.
+            </p>
+          ) : null}
+          <Link href="/gerar" className="btn btn-primary btn-block">
+            Abrir workspace
+          </Link>
+          <button
+            type="button"
+            className="btn btn-secondary btn-block"
+            onClick={() => void handleLogout()}
+          >
+            <LogOut size={18} aria-hidden />
+            Sair
+          </button>
+        </div>
+      </section>
+
+      <section className="section" aria-labelledby="backup-heading">
+        <h2 id="backup-heading" className="section-title">
+          Backup CSV
+        </h2>
+        <div className="surface stack-gap">
+          <p className="helper" style={{ margin: 0 }}>
+            Exporte para trocar de aparelho. Importe o mesmo arquivo para
+            restaurar na conta.
+          </p>
+          <button
+            type="button"
+            className="btn btn-secondary btn-block"
+            onClick={handleExport}
+          >
+            <Download size={18} aria-hidden />
+            Exportar CSV
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-block"
+            onClick={() => fileRef.current?.click()}
+          >
+            <Upload size={18} aria-hidden />
+            Importar CSV
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="sr-only"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) void handleImportFile(file);
+            }}
+          />
+        </div>
+      </section>
+
+      <section className="section" aria-labelledby="settings-heading">
+        <h2 id="settings-heading" className="section-title">
+          Re-post
+        </h2>
+        <div className="surface">
+          <div className="field">
+            <label className="label" htmlFor="repost-days">
+              Dias mínimos entre o mesmo produto no mesmo grupo
+            </label>
+            <input
+              id="repost-days"
+              className="input"
+              type="number"
+              min={1}
+              max={90}
+              value={store.settings.repostWindowDays}
+              onChange={(e) => {
+                const value = Number.parseInt(e.target.value, 10);
+                replaceStore({
+                  ...store,
+                  settings: {
+                    repostWindowDays: Number.isFinite(value) ? value : 7,
+                  },
+                });
+              }}
+            />
           </div>
-        ) : user ? (
-          <div className="surface stack-gap">
-            <p className="helper" style={{ margin: 0 }}>
-              Conectado como
-            </p>
-            <p className="entity-card__title" style={{ margin: 0 }}>
-              {user.name}
-            </p>
-            <p className="helper">@{user.username}</p>
-            {authMode === "dev" ? (
-              <p className="warn-banner" role="status">
-                AUTH_SECRET não definido — segredo de desenvolvimento. Defina
-                AUTH_SECRET em produção.
-              </p>
-            ) : null}
-            <Link href="/gerar" className="btn btn-primary btn-block">
-              Abrir workspace
-            </Link>
+          <div className="actions">
             <button
               type="button"
               className="btn btn-secondary btn-block"
-              onClick={() => void handleLogout()}
+              onClick={() => void saveWindow()}
             >
-              <LogOut size={18} aria-hidden />
-              Sair
+              Salvar preferência
             </button>
           </div>
-        ) : (
-          <div className="surface">
-            <div className="callout callout--next" style={{ marginBottom: 16 }}>
-              <div className="callout__body">
-                <p className="callout__title">Acesso restrito</p>
-                <p className="helper">
-                  Não há cadastro público. Peça uma conta ao administrador do
-                  Easie.
-                </p>
-              </div>
-            </div>
-
-            <form className="stack-gap auth-form" onSubmit={handleAuth}>
-              <div className="field">
-                <label className="label" htmlFor="acc-username">
-                  Usuário
-                </label>
-                <input
-                  id="acc-username"
-                  className="input"
-                  type="text"
-                  autoComplete="username"
-                  inputMode="text"
-                  spellCheck={false}
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                  minLength={2}
-                  maxLength={32}
-                  disabled={busy}
-                  autoFocus
-                />
-              </div>
-              <div className="field">
-                <label className="label" htmlFor="acc-password">
-                  Senha
-                </label>
-                <input
-                  id="acc-password"
-                  className={`input${error ? " input--error" : ""}`}
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  disabled={busy}
-                  aria-invalid={Boolean(error)}
-                  aria-describedby={error ? "acc-error" : "acc-hint"}
-                />
-              </div>
-              {error ? (
-                <p id="acc-error" className="field__error" role="alert">
-                  {error}
-                </p>
-              ) : (
-                <p id="acc-hint" className="helper">
-                  Depois do login você vai para o workspace. Dados ficam na
-                  nuvem, só na sua conta.
-                </p>
-              )}
-              <button
-                type="submit"
-                className="btn btn-primary btn-block"
-                disabled={busy}
-                aria-busy={busy}
-              >
-                {busy ? (
-                  <Loader2 size={18} className="spin" aria-hidden />
-                ) : (
-                  <LogIn size={18} aria-hidden />
-                )}
-                {busy ? "Aguarde…" : "Entrar"}
-              </button>
-            </form>
-          </div>
-        )}
+        </div>
       </section>
 
-      {user ? (
-        <>
-          <section className="section" aria-labelledby="backup-heading">
-            <h2 id="backup-heading" className="section-title">
-              Backup CSV
-            </h2>
-            <div className="surface stack-gap">
-              <p className="helper" style={{ margin: 0 }}>
-                Exporte para trocar de aparelho. Importe o mesmo arquivo para
-                restaurar na conta.
-              </p>
-              <button
-                type="button"
-                className="btn btn-secondary btn-block"
-                onClick={handleExport}
-              >
-                <Download size={18} aria-hidden />
-                Exportar CSV
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary btn-block"
-                onClick={() => fileRef.current?.click()}
-              >
-                <Upload size={18} aria-hidden />
-                Importar CSV
-              </button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".csv,text/csv"
-                className="sr-only"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  e.target.value = "";
-                  if (file) void handleImportFile(file);
-                }}
-              />
-            </div>
-          </section>
+      <section className="section">
+        <Link href="/relatorios" className="btn btn-secondary btn-block">
+          <BarChart3 size={18} aria-hidden />
+          Ver relatórios
+        </Link>
+      </section>
 
-          <section className="section" aria-labelledby="settings-heading">
-            <h2 id="settings-heading" className="section-title">
-              Re-post
-            </h2>
-            <div className="surface">
-              <div className="field">
-                <label className="label" htmlFor="repost-days">
-                  Dias mínimos entre o mesmo produto no mesmo grupo
-                </label>
-                <input
-                  id="repost-days"
-                  className="input"
-                  type="number"
-                  min={1}
-                  max={90}
-                  value={store.settings.repostWindowDays}
-                  onChange={(e) => {
-                    const value = Number.parseInt(e.target.value, 10);
-                    replaceStore({
-                      ...store,
-                      settings: {
-                        repostWindowDays: Number.isFinite(value) ? value : 7,
-                      },
-                    });
-                  }}
-                />
-              </div>
-              <div className="actions">
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-block"
-                  onClick={() => void saveWindow()}
-                >
-                  Salvar preferência
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <section className="section">
-            <Link href="/relatorios" className="btn btn-secondary btn-block">
-              <BarChart3 size={18} aria-hidden />
-              Ver relatórios
-            </Link>
-          </section>
-
-          <section className="section" aria-labelledby="danger-heading">
-            <h2 id="danger-heading" className="section-title">
-              Zona de risco
-            </h2>
-            <div className="surface stack-gap">
-              <p className="helper" style={{ margin: 0 }}>
-                Apaga a conta na nuvem e todos os dados. Exporte um CSV antes se
-                quiser guardar.
-              </p>
-              <button
-                type="button"
-                className="btn btn-danger btn-block"
-                disabled={busy}
-                onClick={() => void handleDeleteAccount()}
-              >
-                <Trash2 size={18} aria-hidden />
-                Excluir conta
-              </button>
-            </div>
-          </section>
-        </>
-      ) : null}
+      <section className="section" aria-labelledby="danger-heading">
+        <h2 id="danger-heading" className="section-title">
+          Zona de risco
+        </h2>
+        <div className="surface stack-gap">
+          <p className="helper" style={{ margin: 0 }}>
+            Apaga a conta na nuvem e todos os dados. Exporte um CSV antes se
+            quiser guardar.
+          </p>
+          <button
+            type="button"
+            className="btn btn-danger btn-block"
+            disabled={busy}
+            onClick={() => void handleDeleteAccount()}
+          >
+            <Trash2 size={18} aria-hidden />
+            Excluir conta
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
@@ -402,6 +419,11 @@ export function AccountApp() {
     <Suspense
       fallback={
         <div className="page page--auth">
+          <header className="auth-hero">
+            <p className="auth-hero__brand" aria-hidden>
+              Easie<span className="auth-hero__dot">.</span>
+            </p>
+          </header>
           <div className="surface stack-gap" aria-busy="true">
             <div className="skeleton skeleton--line" style={{ width: "40%" }} />
             <div className="skeleton skeleton--btn" />
