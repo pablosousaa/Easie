@@ -72,6 +72,10 @@ export type EasieStore = {
   groups: FacebookGroup[];
   postings: Posting[];
   settings: UserSettings;
+  /** Mercado Livre item ids the user already claimed from Pegar produtos (RF44). */
+  trendingTakenIds: string[];
+  /** Mercado Livre item ids the user hid from the list (RF44). */
+  trendingHiddenIds: string[];
 };
 
 export type PublicUser = {
@@ -88,6 +92,8 @@ export type MigratePayload = {
   postings?: Posting[];
   lastProduct?: ProductDraft | null;
   settings?: UserSettings;
+  trendingTakenIds?: string[];
+  trendingHiddenIds?: string[];
 };
 
 export const TEMPLATE_VARIABLES = [

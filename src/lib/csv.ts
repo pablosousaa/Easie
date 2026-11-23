@@ -288,6 +288,8 @@ export function importStoreFromCsv(raw: string): CsvImportResult {
       groups,
       postings,
       settings,
+      trendingTakenIds: [],
+      trendingHiddenIds: [],
     },
   };
 }
