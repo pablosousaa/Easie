@@ -93,3 +93,25 @@ export function maybeCompleteProduct(
     ),
   };
 }
+
+/**
+ * If a posting was reverted to pending and the product was already "done",
+ * put it back in the queue as active so the checklist stays usable.
+ */
+export function maybeReopenProduct(
+  store: EasieStore,
+  productId: string,
+): EasieStore {
+  const { done, total } = progressForProduct(store, productId);
+  if (total === 0 || done >= total) return store;
+  const product = store.products.find((p) => p.id === productId);
+  if (!product || product.status !== "done") return store;
+  return {
+    ...store,
+    products: store.products.map((p) =>
+      p.id === productId
+        ? { ...p, status: "active", completedAt: null }
+        : p,
+    ),
+  };
+}
