@@ -12,19 +12,21 @@ Sistema web para afiliados do Mercado Livre que divulgam produtos em grupos do F
 Não existe signup na UI nem em `/api/auth/signup`. Crie contas no servidor:
 
 ```bash
-npm run user:create -- --name "Pablo" --email pablo@example.com --password 'senha-segura'
+npm run user:create -- --name "Pablo" --username pablo --password 'senha-segura'
 ```
 
 O script grava no mesmo SQLite do app (`DATABASE_PATH` / `DATABASE_URL`, padrão `./data/easie.db`), faz hash da senha e semeia o modelo de texto padrão.
 
-Depois disso, a pessoa entra em `/conta` com e-mail e senha.
+Depois disso, a pessoa entra em `/conta` com **usuário** e senha (não e-mail).
+
+Contas antigas com e-mail recebem `username` automático (parte local do e-mail) na migração do banco.
 
 ## Fase 2 — Controle por grupo + contas
 
 - Cadastro de grupos (nome, link, tema, regras) com ativar/desativar
 - Checklist por produto: pendente / postado / ignorado, abrir grupo + copiar texto, variação sugerida por grupo, aviso de re-post, progresso
 - Fila de produtos e histórico com datas/grupos
-- Contas individuais (e-mail/senha); dados privados por usuário em SQLite no servidor
+- Contas individuais (usuário/senha); dados privados por usuário em SQLite no servidor
 - UI pt-BR, mobile-first
 
 ## Fase 3 — Backup e relatórios
@@ -57,7 +59,7 @@ Depois disso, a pessoa entra em `/conta` com e-mail e senha.
 ```bash
 npm install
 cp .env.example .env.local   # opcional em dev
-npm run user:create -- --name "Admin" --email admin@example.com --password 'trocar-agora'
+npm run user:create -- --name "Admin" --username admin --password 'trocar-agora'
 npm run dev
 ```
 

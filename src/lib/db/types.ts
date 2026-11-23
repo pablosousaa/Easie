@@ -3,6 +3,8 @@ import type { PostingStatus, ProductStatus } from "@/lib/types";
 export type UserRow = {
   id: string;
   name: string;
+  username: string;
+  /** Legacy; may be empty after username migration. */
   email: string;
   password_hash: string;
   repost_window_days: number;

@@ -22,7 +22,7 @@ type AuthContextValue = {
   cloud: boolean;
   authMode: "dev" | "secure" | null;
   refresh: () => Promise<void>;
-  login: (email: string, password: string) => Promise<string | null>;
+  login: (username: string, password: string) => Promise<string | null>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<string | null>;
   pushStore: (store?: EasieStore) => Promise<void>;
@@ -87,12 +87,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user],
   );
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (username: string, password: string) => {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ username, password }),
     });
     const data = (await res.json()) as { error?: string; user?: PublicUser };
     if (!res.ok) return data.error ?? "Falha no login";
