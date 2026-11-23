@@ -337,7 +337,7 @@ export function TrendingApp() {
 
       {showCats && data ? (
         <section className="section surface" aria-labelledby="cats-heading">
-          <h2 id="cats-heading" className="page-title" style={{ fontSize: "1.125rem" }}>
+          <h2 id="cats-heading" className="section-title">
             Categorias na lista
           </h2>
           <ul className="entity-list" style={{ marginTop: 16 }}>
@@ -440,7 +440,7 @@ export function TrendingApp() {
             onClick={() => setClaimItem(null)}
           />
           <form className="trending-modal__panel surface" onSubmit={submitClaim}>
-            <h2 id="claim-title" className="page-title" style={{ fontSize: "1.25rem" }}>
+            <h2 id="claim-title" className="section-title">
               Gerar seu link de afiliado
             </h2>
             <p className="page-sub">

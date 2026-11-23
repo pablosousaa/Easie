@@ -34,6 +34,7 @@ const MOBILE_TABS = [
 ] as const;
 
 function isActive(pathname: string, href: string) {
+  if (href === "/fila" && pathname.startsWith("/checklist/")) return true;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

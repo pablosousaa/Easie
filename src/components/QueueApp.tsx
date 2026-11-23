@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
-import { ArrowRight, History } from "lucide-react";
+import { ArrowRight, History, Sparkles } from "lucide-react";
+import { EmptyState } from "./EmptyState";
 import {
   getServerSnapshot,
   getStoreSnapshot,
@@ -33,9 +34,7 @@ export function QueueApp() {
 
       <section className="section">
         <div className="section-head">
-          <h2 className="page-title" style={{ fontSize: "1.125rem" }}>
-            Na fila ({queue.length})
-          </h2>
+          <h2 className="section-title">Na fila ({queue.length})</h2>
           <Link href="/historico" className="btn btn-ghost btn-sm">
             <History size={16} aria-hidden />
             Histórico
@@ -43,10 +42,17 @@ export function QueueApp() {
         </div>
 
         {queue.length === 0 ? (
-          <div className="surface empty">
-            Nenhum produto na fila. Gere textos em{" "}
-            <Link href="/gerar">Gerar</Link> para adicionar.
-          </div>
+          <EmptyState
+            title="Fila vazia"
+            action={
+              <Link href="/gerar" className="btn btn-primary">
+                <Sparkles size={18} aria-hidden />
+                Gerar textos
+              </Link>
+            }
+          >
+            <p className="helper">Cadastre um produto para começar a divulgar</p>
+          </EmptyState>
         ) : (
           <ul className="entity-list">
             {queue.map((product) => {
