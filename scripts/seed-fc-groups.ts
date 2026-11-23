@@ -23,7 +23,7 @@ async function main() {
 
   const result = await seedSharedGroupsForAllUsers();
   console.log(
-    `Pronto: ${result.users} conta(s), ${result.inserted} inserido(s), ${result.skipped} já existia(m).`,
+    `Pronto: ${result.users} conta(s), ${result.inserted} inserido(s), ${result.updated} atualizado(s), ${result.skipped} sem mudança.`,
   );
 }
 

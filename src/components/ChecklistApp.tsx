@@ -220,7 +220,7 @@ export function ChecklistApp({ productId }: Props) {
                     <div>
                       <h3 className="entity-card__title">{group.name}</h3>
                       {group.theme ? (
-                        <p className="helper">Tema: {group.theme}</p>
+                        <p className="helper">Categoria: {group.theme}</p>
                       ) : null}
                     </div>
                     <span className={`status-pill status-pill--${posting.status}`}>
