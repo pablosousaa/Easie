@@ -7,6 +7,7 @@ import {
   Check,
   Copy,
   ExternalLink,
+  RotateCcw,
   SkipForward,
   Users,
 } from "lucide-react";
@@ -17,8 +18,10 @@ import {
   ensureChecklist,
   markPostingStatus,
   maybeCompleteProduct,
+  maybeReopenProduct,
   progressForProduct,
 } from "@/lib/checklist";
+import type { PostingStatus } from "@/lib/types";
 import { formatDateTimePt } from "@/lib/format";
 import { generateVariations } from "@/lib/generate";
 import { checkRepostWindow } from "@/lib/repost";
@@ -153,7 +156,7 @@ export function ChecklistApp({ productId }: Props) {
     window.open(link, "_blank", "noopener,noreferrer");
   }
 
-  async function setStatus(postingId: string, status: "posted" | "ignored") {
+  async function setStatus(postingId: string, status: PostingStatus) {
     if (!product) return;
     const current = product;
     const posting = prepared.postings.find((p) => p.id === postingId);
@@ -175,10 +178,15 @@ export function ChecklistApp({ productId }: Props) {
     }
 
     let next = markPostingStatus(prepared, postingId, status);
-    next = maybeCompleteProduct(next, current.id);
+    if (status === "pending") {
+      next = maybeReopenProduct(next, current.id);
+    } else {
+      next = maybeCompleteProduct(next, current.id);
+    }
     await persist(next);
     if (status === "posted") showToast("Marcado como postado");
     if (status === "ignored") showToast("Grupo ignorado");
+    if (status === "pending") showToast("Marcado como não postado");
 
     const updated = next.products.find((p) => p.id === current.id);
     if (updated?.status === "done") {
@@ -418,24 +426,44 @@ export function ChecklistApp({ productId }: Props) {
                           Copiar
                         </button>
                       ) : null}
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => void setStatus(posting.id, "posted")}
-                        disabled={posting.status === "posted"}
-                      >
-                        <Check size={16} aria-hidden />
-                        Postado
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => void setStatus(posting.id, "ignored")}
-                        disabled={posting.status === "ignored"}
-                      >
-                        <SkipForward size={16} aria-hidden />
-                        Ignorar
-                      </button>
+                      {posting.status === "posted" ? (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => void setStatus(posting.id, "pending")}
+                        >
+                          <RotateCcw size={16} aria-hidden />
+                          Não postado
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => void setStatus(posting.id, "posted")}
+                        >
+                          <Check size={16} aria-hidden />
+                          Postado
+                        </button>
+                      )}
+                      {posting.status === "ignored" ? (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => void setStatus(posting.id, "pending")}
+                        >
+                          <RotateCcw size={16} aria-hidden />
+                          Desfazer
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => void setStatus(posting.id, "ignored")}
+                        >
+                          <SkipForward size={16} aria-hidden />
+                          Ignorar
+                        </button>
+                      )}
                     </div>
                   </div>
                 </li>
