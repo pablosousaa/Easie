@@ -10,7 +10,7 @@ const DEFAULT_TEMPLATE_UPDATED_AT = "2026-01-01T00:00:00.000Z";
  */
 export const AD_TEMPLATE_DEFS = [
   {
-    name: "Oferta imperdível",
+    name: "OFERTA IMPERDÍVEL",
     content: `🔥 ACHEI! {{nome}} por um preço ABSURDO!
 
 💰 Por apenas: {{preco}} 🚚 {{frete}} · 📦 {{entrega}} ⚠️ Só enquanto durar!
@@ -18,7 +18,7 @@ export const AD_TEMPLATE_DEFS = [
 🛒 Veja aqui 👉 {{link}}`,
   },
   {
-    name: "Achadinho do dia",
+    name: "ACHADINHO DO DIA",
     content: `🤯 OLHA O QUE EU ENCONTREI!
 
 {{nome}} por apenas {{preco}}! 😍
@@ -28,7 +28,7 @@ export const AD_TEMPLATE_DEFS = [
 👇 Confira aqui 👉 {{link}}`,
   },
   {
-    name: "Alerta de oferta",
+    name: "ALERTA DE OFERTA",
     content: `🚨 ATENÇÃO! OFERTA ENCONTRADA!
 
 🔥 {{nome}} por apenas {{preco}}!
@@ -39,7 +39,7 @@ export const AD_TEMPLATE_DEFS = [
 🛍️ Compre aqui 👉 {{link}}`,
   },
   {
-    name: "Oportunidade encontrada",
+    name: "OPORTUNIDADE ENCONTRADA",
     content: `😍 VOCÊ PRECISA VER ISSO!
 
 {{nome}} com um preço de cair o queixo!
@@ -49,7 +49,7 @@ export const AD_TEMPLATE_DEFS = [
 👉 Confira agora: {{link}}`,
   },
   {
-    name: "Preço absurdo",
+    name: "PREÇO ABSURDO",
     content: `💥 QUE PREÇO É ESSE?!
 
 🔥 {{nome}} por apenas {{preco}}!
@@ -61,6 +61,13 @@ export const AD_TEMPLATE_DEFS = [
 👇 GARANTA O SEU 👉 {{link}}`,
   },
 ] as const;
+
+/** True when store already has the five canonical ads (by exact name). */
+export function hasCanonicalAdTemplates(templates: TextTemplate[]): boolean {
+  if (templates.length < AD_TEMPLATE_DEFS.length) return false;
+  const names = new Set(templates.map((t) => t.name.trim()));
+  return AD_TEMPLATE_DEFS.every((d) => names.has(d.name));
+}
 
 export const DEFAULT_TEMPLATE_CONTENT = AD_TEMPLATE_DEFS[0].content;
 

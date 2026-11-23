@@ -41,8 +41,8 @@ export function GeneratorApp() {
   async function handleGenerate(draft: ProductDraft) {
     setGenerating(true);
     try {
-      // Five ad texts (and any saved Modelos) become the variation cards
-      const variations = generateVariations(draft, store.templates);
+      // Always the five ads — never cloud/local store templates
+      const variations = generateVariations(draft);
 
       const product: Product = {
         id: createId("prd"),
@@ -96,7 +96,7 @@ export function GeneratorApp() {
       <header className="page-header">
         <h1 className="page-title">Gerar</h1>
         <p className="page-sub">
-          Cadastre o produto e gere as 5 variações de anúncio
+          Cadastre o produto e gere as 5 variações (OFERTA IMPERDÍVEL …)
         </p>
       </header>
 
@@ -154,7 +154,7 @@ export function GeneratorApp() {
             </p>
             <p className="helper" style={{ marginTop: 8 }}>
               <Sparkles size={14} className="inline-icon" aria-hidden />{" "}
-              As 5 variações (Oferta imperdível, Achadinho… ) aparecem aqui
+              As 5 variações (OFERTA IMPERDÍVEL, ACHADINHO DO DIA… ) aparecem aqui
             </p>
           </EmptyState>
         ) : (

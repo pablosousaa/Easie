@@ -49,7 +49,7 @@ export function ChecklistApp({ productId }: Props) {
     const variations =
       store.variations.length > 0
         ? store.variations
-        : generateVariations(product, store.templates);
+        : generateVariations(product);
     return ensureChecklist(store, product, variations);
   }, [product, store]);
 

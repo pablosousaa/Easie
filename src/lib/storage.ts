@@ -11,7 +11,11 @@ import type {
   UserSettings,
 } from "./types";
 import { EMPTY_RESULTS, STORAGE_KEY, STORAGE_KEY_V1 } from "./types";
-import { createAdTemplates, createDefaultTemplate } from "./templates";
+import {
+  createAdTemplates,
+  createDefaultTemplate,
+  hasCanonicalAdTemplates,
+} from "./templates";
 
 const listeners = new Set<() => void>();
 let memoryCache: EasieStore | null = null;
@@ -63,10 +67,18 @@ function asDraft(value: unknown): ProductDraft | null {
 }
 
 function normalize(parsed: Partial<EasieStore>): EasieStore {
-  const templates =
+  const incoming =
     parsed.templates && parsed.templates.length > 0
       ? parsed.templates
       : seedTemplates();
+
+  // Replace Natal/sazonal / legacy seeds with the five canonical ads
+  const templates = hasCanonicalAdTemplates(incoming)
+    ? incoming.map((t) => ({
+        ...t,
+        category: typeof t.category === "string" ? t.category : "",
+      }))
+    : seedTemplates();
 
   if (!templates.some((t) => t.isDefault)) {
     templates[0] = { ...templates[0], isDefault: true };
@@ -90,15 +102,10 @@ function normalize(parsed: Partial<EasieStore>): EasieStore {
       }))
     : [];
 
-  const templatesNormalized = templates.map((t) => ({
-    ...t,
-    category: typeof t.category === "string" ? t.category : "",
-  }));
-
   return {
     products,
     lastProduct: asDraft(parsed.lastProduct) ?? null,
-    templates: templatesNormalized,
+    templates,
     variations: Array.isArray(parsed.variations)
       ? (parsed.variations as TextVariation[])
       : [],
