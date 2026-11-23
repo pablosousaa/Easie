@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Loader2, Sparkles, Wand2 } from "lucide-react";
 import type { ProductDraft } from "@/lib/types";
-import { PRODUCT_CATEGORIES } from "@/lib/categories";
 import { useToast } from "./ToastProvider";
 
 type Errors = Partial<Record<"affiliateLink" | "name" | "price", string>>;
@@ -71,7 +70,6 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
         name?: string;
         price?: string;
         freeShipping?: boolean;
-        category?: string;
         warning?: string | null;
         error?: string;
       };
@@ -84,10 +82,6 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
         name: data.name?.trim() || prev.name,
         price: data.price?.trim() || prev.price,
         freeShipping: data.freeShipping ?? prev.freeShipping,
-        category:
-          data.category !== undefined && data.category !== ""
-            ? data.category
-            : prev.category,
       }));
       if (data.warning) showToast(data.warning);
       else if (data.name) showToast("Campos preenchidos a partir do link.");
@@ -200,24 +194,6 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
             {errors.price}
           </p>
         ) : null}
-      </div>
-
-      <div className="field">
-        <label className="label" htmlFor="category">
-          Categoria
-        </label>
-        <select
-          id="category"
-          className="input"
-          value={product.category ?? ""}
-          onChange={(e) => update("category", e.target.value)}
-        >
-          {PRODUCT_CATEGORIES.map((c) => (
-            <option key={c.id || "geral"} value={c.id}>
-              {c.label}
-            </option>
-          ))}
-        </select>
       </div>
 
       <div className="toggle-row" role="group" aria-label="Benefícios do produto">
