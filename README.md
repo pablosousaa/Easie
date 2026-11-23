@@ -1,9 +1,23 @@
 # Easie
 
-Sistema web (SaaS-style) para afiliados do Mercado Livre que divulgam produtos em grupos do Facebook. O envio final é sempre **manual** (sem automação).
+Sistema web para afiliados do Mercado Livre que divulgam produtos em grupos do Facebook. O envio final é sempre **manual** (sem automação).
 
-- Landing em `/` · workspace em `/gerar` (login obrigatório; sidebar no desktop, bottom nav no mobile)
+- Entrada em `/` → login (`/conta`) ou workspace (`/gerar`) se já autenticado
+- **Sem cadastro público** — usuários são criados manualmente (CLI)
+- Login obrigatório para o workspace; dados privados por conta (SQLite)
 - Visual: UI escura graphite + neon (Absolute UI + Unslop), pt-BR, mobile-first
+
+## Criar usuários (admin)
+
+Não existe signup na UI nem em `/api/auth/signup`. Crie contas no servidor:
+
+```bash
+npm run user:create -- --name "Pablo" --email pablo@example.com --password 'senha-segura'
+```
+
+O script grava no mesmo SQLite do app (`DATABASE_PATH` / `DATABASE_URL`, padrão `./data/easie.db`), faz hash da senha e semeia o modelo de texto padrão.
+
+Depois disso, a pessoa entra em `/conta` com e-mail e senha.
 
 ## Fase 2 — Controle por grupo + contas
 
@@ -11,8 +25,6 @@ Sistema web (SaaS-style) para afiliados do Mercado Livre que divulgam produtos e
 - Checklist por produto: pendente / postado / ignorado, abrir grupo + copiar texto, variação sugerida por grupo, aviso de re-post, progresso
 - Fila de produtos e histórico com datas/grupos
 - Contas individuais (e-mail/senha); dados privados por usuário em SQLite no servidor
-- **Login obrigatório** para o workspace (sem modo convidado / localStorage-only)
-- Migração opcional de dados antigos do aparelho ao criar a conta
 - UI pt-BR, mobile-first
 
 ## Fase 3 — Backup e relatórios
@@ -45,10 +57,11 @@ Sistema web (SaaS-style) para afiliados do Mercado Livre que divulgam produtos e
 ```bash
 npm install
 cp .env.example .env.local   # opcional em dev
+npm run user:create -- --name "Admin" --email admin@example.com --password 'trocar-agora'
 npm run dev
 ```
 
-Abra [http://localhost:3000](http://localhost:3000).
+Abra [http://localhost:3000](http://localhost:3000) — você cai no login.
 
 O banco SQLite é criado automaticamente em `data/easie.db` (ou no caminho de `DATABASE_PATH` / `DATABASE_URL`).
 
@@ -79,16 +92,18 @@ Hospedagem barata: qualquer VPS/Node 22+ com disco persistente (SQLite). Evite s
 | `npm run build` | Build de produção |
 | `npm start` | Servir build |
 | `npm run lint` | ESLint |
+| `npm run user:create` | Criar usuário manualmente (sem signup público) |
 
 ## Fluxo sugerido
 
-1. (Opcional) Criar conta em **Conta** e migrar dados locais
-2. Cadastrar grupos em **Grupos**
-3. (Opcional) Escolher sugestão em **Pegar produtos** e colar o link de afiliado
-4. Gerar textos em **Gerar** (produto entra na fila + checklist)
-5. Em **Fila** → checklist: abrir grupo, copiar, marcar postado
-6. Ver concluídos em **Histórico**
+1. Admin cria a conta com `npm run user:create`
+2. Usuário entra em **Conta**
+3. Cadastrar grupos em **Grupos**
+4. (Opcional) Escolher sugestão em **Pegar produtos** e colar o link de afiliado
+5. Gerar textos em **Gerar** (produto entra na fila + checklist)
+6. Em **Fila** → checklist: abrir grupo, copiar, marcar postado
+7. Ver concluídos em **Histórico**
 
 ## Fora do escopo
 
-Automação do Facebook, pagamentos/comissões automáticas, edição de imagens.
+Automação do Facebook, pagamentos/comissões automáticas, edição de imagens, cadastro público self-service.
