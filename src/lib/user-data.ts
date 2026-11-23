@@ -6,6 +6,11 @@ import type {
   TemplateRow,
   UserRow,
 } from "./db/types";
+import {
+  FC_GROUP_DEFS,
+  FC_GROUPS_CREATED_AT,
+  normalizeGroupLink,
+} from "./fc-groups";
 import { createAdTemplates, hasCanonicalAdTemplates } from "./templates";
 import { createId, nowIso } from "./ids";
 import type {
@@ -165,9 +170,74 @@ export async function seedDefaultTemplate(userId: string): Promise<void> {
   }
 }
 
+/**
+ * Upsert the shared FC group catalog into one account.
+ * Matches by normalized Facebook link — never duplicates, never removes custom groups.
+ */
+export async function seedSharedGroups(
+  userId: string,
+): Promise<{ inserted: number; skipped: number }> {
+  await ready();
+  const existing = await sqlAll<{ id: string; link: string }>(
+    "SELECT id, link FROM groups WHERE user_id = ?",
+    [userId],
+  );
+  const have = new Set(
+    existing.map((g) => normalizeGroupLink(g.link)).filter(Boolean),
+  );
+
+  let inserted = 0;
+  let skipped = 0;
+
+  for (const def of FC_GROUP_DEFS) {
+    const norm = normalizeGroupLink(def.link);
+    if (have.has(norm)) {
+      skipped++;
+      continue;
+    }
+    await sqlRun(
+      `INSERT INTO groups (id, user_id, name, link, theme, rules, active, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, 1, ?)`,
+      [
+        createId("grp"),
+        userId,
+        def.name,
+        def.link,
+        def.theme,
+        "",
+        FC_GROUPS_CREATED_AT,
+      ],
+    );
+    have.add(norm);
+    inserted++;
+  }
+
+  return { inserted, skipped };
+}
+
+/** Seed FC groups for every user (idempotent). Used by scripts / redeploy. */
+export async function seedSharedGroupsForAllUsers(): Promise<{
+  users: number;
+  inserted: number;
+  skipped: number;
+}> {
+  await ready();
+  const users = await sqlAll<{ id: string }>("SELECT id FROM users");
+  let inserted = 0;
+  let skipped = 0;
+  for (const u of users) {
+    const r = await seedSharedGroups(u.id);
+    inserted += r.inserted;
+    skipped += r.skipped;
+  }
+  return { users: users.length, inserted, skipped };
+}
+
 export async function loadUserStore(userId: string): Promise<EasieStore> {
   await ready();
   const user = await findUserById(userId);
+  // Ensure shared FC catalog is present before reading groups (idempotent).
+  await seedSharedGroups(userId);
   const productRows = await sqlAll<ProductRow>(
     `SELECT * FROM products WHERE user_id = ?
      ORDER BY queue_order ASC, created_at ASC`,

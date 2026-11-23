@@ -15,6 +15,7 @@ import {
   findUserByUsername,
   insertUser,
   seedDefaultTemplate,
+  seedSharedGroups,
 } from "../src/lib/user-data";
 import { isValidUsername, normalizeUsername } from "../src/lib/username";
 import { ensureDbReady, usePostgres } from "../src/lib/db";
@@ -92,6 +93,7 @@ async function main() {
   const passwordHash = await hashPassword(password);
   await insertUser({ id, name, username, passwordHash, repostWindowDays: 7 });
   await seedDefaultTemplate(id);
+  await seedSharedGroups(id);
 
   console.log("Usuário criado:");
   console.log(`  id:       ${id}`);
