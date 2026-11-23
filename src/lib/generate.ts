@@ -1,4 +1,4 @@
-import type { ProductDraft, TextTemplate, TextVariation } from "./types";
+import type { ProductDraft, TextVariation } from "./types";
 import { formatPriceBRL } from "./format";
 import { createId } from "./ids";
 import { AD_TEMPLATE_DEFS } from "./templates";
@@ -50,21 +50,12 @@ export function applyTemplate(template: string, vars: Vars): string {
 }
 
 /**
- * Gerar variations = one filled card per ad modelo.
- * Default: the five texts (Oferta imperdível … Preço absurdo).
- * Pass saved Modelos to use/edit those instead (or in addition via store).
+ * Always the five ads from templates-anuncios.txt.
+ * Ignores cloud/local store templates so Natal/sazonal (etc.) never override Gerar.
  */
-export function generateVariations(
-  product: ProductDraft,
-  templates?: TextTemplate[],
-): TextVariation[] {
+export function generateVariations(product: ProductDraft): TextVariation[] {
   const vars = productVars(product);
-  const sources =
-    templates && templates.length > 0
-      ? templates.map((t) => ({ name: t.name, content: t.content }))
-      : AD_TEMPLATE_DEFS.map((d) => ({ name: d.name, content: d.content }));
-
-  return sources.map((src) => ({
+  return AD_TEMPLATE_DEFS.map((src) => ({
     id: createId("var"),
     text: applyTemplate(src.content, vars),
     label: src.name,

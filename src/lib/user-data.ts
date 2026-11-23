@@ -6,7 +6,7 @@ import type {
   TemplateRow,
   UserRow,
 } from "./db/types";
-import { createAdTemplates } from "./templates";
+import { createAdTemplates, hasCanonicalAdTemplates } from "./templates";
 import { createId, nowIso } from "./ids";
 import type {
   EasieStore,
@@ -186,10 +186,31 @@ export async function loadUserStore(userId: string): Promise<EasieStore> {
     [userId],
   );
 
-  const mappedTemplates =
+  let mappedTemplates =
     templateRows.length > 0
       ? templateRows.map(mapTemplate)
-      : createAdTemplates();
+      : createAdTemplates(() => createId("tpl"));
+
+  // One-shot migrate: replace Natal/sazonal / legacy templates with the five ads
+  if (!hasCanonicalAdTemplates(mappedTemplates)) {
+    mappedTemplates = createAdTemplates(() => createId("tpl"));
+    await sqlRun("DELETE FROM templates WHERE user_id = ?", [userId]);
+    for (const tpl of mappedTemplates) {
+      await sqlRun(
+        `INSERT INTO templates (id, user_id, name, content, is_default, updated_at, category)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          tpl.id,
+          userId,
+          tpl.name,
+          tpl.content,
+          tpl.isDefault ? 1 : 0,
+          nowIso(),
+          tpl.category ?? "",
+        ],
+      );
+    }
+  }
 
   const prefs = await sqlGet<{ taken_ids: string; hidden_ids: string }>(
     "SELECT taken_ids, hidden_ids FROM user_trending_prefs WHERE user_id = ?",
@@ -416,7 +437,11 @@ export async function replaceUserStore(
   await sqlRun("DELETE FROM groups WHERE user_id = ?", [userId]);
   await sqlRun("DELETE FROM templates WHERE user_id = ?", [userId]);
 
-  for (const tpl of store.templates) {
+  const templatesToSave = hasCanonicalAdTemplates(store.templates)
+    ? store.templates
+    : createAdTemplates(() => createId("tpl"));
+
+  for (const tpl of templatesToSave) {
     await sqlRun(
       `INSERT INTO templates (id, user_id, name, content, is_default, updated_at, category)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -431,7 +456,7 @@ export async function replaceUserStore(
       ],
     );
   }
-  if (store.templates.length === 0) {
+  if (templatesToSave.length === 0) {
     await seedDefaultTemplate(userId);
   }
 

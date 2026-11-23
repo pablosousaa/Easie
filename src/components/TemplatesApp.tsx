@@ -30,9 +30,10 @@ export function TemplatesApp() {
       <header className="page-header">
         <h1 className="page-title">Modelos de texto</h1>
         <p className="page-sub">
-          Estes modelos viram as variações em Gerar (um card por modelo). Use{" "}
-          {"{{nome}}"} / {"{{preco}}"} / {"{{link}}"} ou [PRODUTO] / [PREÇO] /
-          [LINK]. Frete e entrega seguem os toggles do produto.
+          Os 5 anúncios canônicos (OFERTA IMPERDÍVEL … PREÇO ABSURDO). Gerar
+          sempre usa esse conjunto — modelos antigos (Natal/sazonal) são
+          migrados. Variáveis: {"{{nome}}"} / {"{{preco}}"} / {"{{link}}"} ou
+          [PRODUTO] / [PREÇO] / [LINK].
         </p>
       </header>
 
