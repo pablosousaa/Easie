@@ -29,6 +29,9 @@ function mapProduct(row: ProductRow): Product {
     queueOrder: row.queue_order,
     createdAt: row.created_at,
     completedAt: row.completed_at,
+    clicks: row.clicks ?? 0,
+    sales: row.sales ?? 0,
+    commission: row.commission ?? "",
   };
 }
 
@@ -225,8 +228,8 @@ export function migrateLocalData(userId: string, payload: MigratePayload) {
       db.prepare(
         `INSERT INTO products (
            id, user_id, affiliate_link, name, price, free_shipping, fast_delivery,
-           status, queue_order, created_at, completed_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           status, queue_order, created_at, completed_at, clicks, sales, commission
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         id,
         userId,
@@ -239,6 +242,9 @@ export function migrateLocalData(userId: string, payload: MigratePayload) {
         p.queueOrder ?? 0,
         p.createdAt || nowIso(),
         p.completedAt ?? null,
+        p.clicks ?? 0,
+        p.sales ?? 0,
+        p.commission ?? "",
       );
     }
   }
@@ -277,8 +283,8 @@ export function migrateLocalData(userId: string, payload: MigratePayload) {
     db.prepare(
       `INSERT INTO products (
          id, user_id, affiliate_link, name, price, free_shipping, fast_delivery,
-         status, queue_order, created_at, completed_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', 0, ?, NULL)`,
+         status, queue_order, created_at, completed_at, clicks, sales, commission
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', 0, ?, NULL, 0, 0, '')`,
     ).run(
       createId("prd"),
       userId,
@@ -342,8 +348,8 @@ export function replaceUserStore(userId: string, store: EasieStore) {
     db.prepare(
       `INSERT INTO products (
          id, user_id, affiliate_link, name, price, free_shipping, fast_delivery,
-         status, queue_order, created_at, completed_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         status, queue_order, created_at, completed_at, clicks, sales, commission
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       p.id,
       userId,
@@ -356,6 +362,9 @@ export function replaceUserStore(userId: string, store: EasieStore) {
       p.queueOrder,
       p.createdAt || nowIso(),
       p.completedAt,
+      p.clicks ?? 0,
+      p.sales ?? 0,
+      p.commission ?? "",
     );
   }
 
@@ -377,4 +386,10 @@ export function replaceUserStore(userId: string, store: EasieStore) {
       post.createdAt || nowIso(),
     );
   }
+}
+
+/** Deletes the user row; FK CASCADE removes products, groups, templates, postings. */
+export function deleteUserAccount(userId: string) {
+  const db = getSqlite();
+  db.prepare("DELETE FROM users WHERE id = ?").run(userId);
 }

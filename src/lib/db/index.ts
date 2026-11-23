@@ -38,7 +38,10 @@ function ensureSchema(sqlite: DatabaseSync) {
       status TEXT NOT NULL DEFAULT 'draft',
       queue_order INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      completed_at TEXT
+      completed_at TEXT,
+      clicks INTEGER NOT NULL DEFAULT 0,
+      sales INTEGER NOT NULL DEFAULT 0,
+      commission TEXT NOT NULL DEFAULT ''
     );
     CREATE INDEX IF NOT EXISTS products_user_idx ON products(user_id);
 
@@ -81,6 +84,22 @@ function ensureSchema(sqlite: DatabaseSync) {
   `);
 }
 
+function migrateSchema(sqlite: DatabaseSync) {
+  const cols = sqlite
+    .prepare("PRAGMA table_info(products)")
+    .all() as Array<{ name: string }>;
+  const names = new Set(cols.map((c) => c.name));
+  if (!names.has("clicks")) {
+    sqlite.exec("ALTER TABLE products ADD COLUMN clicks INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!names.has("sales")) {
+    sqlite.exec("ALTER TABLE products ADD COLUMN sales INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!names.has("commission")) {
+    sqlite.exec("ALTER TABLE products ADD COLUMN commission TEXT NOT NULL DEFAULT ''");
+  }
+}
+
 export function getSqlite(): DatabaseSync {
   if (!globalForDb.easieSqlite) {
     const dbPath = resolveDbPath();
@@ -89,6 +108,7 @@ export function getSqlite(): DatabaseSync {
     sqlite.exec("PRAGMA journal_mode = WAL;");
     sqlite.exec("PRAGMA foreign_keys = ON;");
     ensureSchema(sqlite);
+    migrateSchema(sqlite);
     globalForDb.easieSqlite = sqlite;
   }
   return globalForDb.easieSqlite;

@@ -8,6 +8,7 @@ import { VariationCard } from "./VariationCard";
 import { useToast } from "./ToastProvider";
 import { useAuth } from "./AuthProvider";
 import type { Product, ProductDraft, TextVariation } from "@/lib/types";
+import { EMPTY_RESULTS } from "@/lib/types";
 import { emptyProduct } from "@/lib/format";
 import { generateVariations } from "@/lib/generate";
 import { createId, nowIso } from "@/lib/ids";
@@ -43,6 +44,7 @@ export function GeneratorApp() {
     const product: Product = {
       id: createId("prd"),
       ...draft,
+      ...EMPTY_RESULTS,
       status: "queued",
       queueOrder: store.products.length,
       createdAt: nowIso(),

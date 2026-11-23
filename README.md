@@ -12,6 +12,13 @@ Sistema web para afiliados do Mercado Livre que divulgam produtos em grupos do F
 - Geração/cópia de textos da Fase 1 continua funcionando (também offline no navegador)
 - UI pt-BR, mobile-first
 
+## Fase 3 — Backup e relatórios
+
+- Exportar / importar todos os dados em CSV (`# easie-backup-v1`) — Conta
+- Excluir conta e dados na nuvem
+- Relatórios: posts hoje / semana / total + gráfico 7 dias
+- Resultados manuais por produto (cliques, vendas, comissão)
+
 ## Requisitos
 
 - **Node.js 22.13+** (usa o módulo nativo `node:sqlite` — sem compilação C++ / Visual Studio Build Tools no Windows)

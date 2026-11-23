@@ -21,6 +21,9 @@ export type ProductRow = {
   queue_order: number;
   created_at: string;
   completed_at: string | null;
+  clicks: number;
+  sales: number;
+  commission: string;
 };
 
 export type TemplateRow = {

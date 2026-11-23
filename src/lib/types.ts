@@ -8,13 +8,21 @@ export type ProductDraft = {
 
 export type ProductStatus = "draft" | "queued" | "active" | "done" | "archived";
 
-export type Product = ProductDraft & {
-  id: string;
-  status: ProductStatus;
-  queueOrder: number;
-  createdAt: string;
-  completedAt: string | null;
+export type ProductResults = {
+  clicks: number;
+  sales: number;
+  /** Commission amount as typed by the user (e.g. "12,50"). */
+  commission: string;
 };
+
+export type Product = ProductDraft &
+  ProductResults & {
+    id: string;
+    status: ProductStatus;
+    queueOrder: number;
+    createdAt: string;
+    completedAt: string | null;
+  };
 
 export type TextTemplate = {
   id: string;
@@ -90,6 +98,12 @@ export const TEMPLATE_VARIABLES = [
   { key: "{{entrega}}", label: "Entrega rápida (ou vazio)" },
 ] as const;
 
-/** Phase 2 key; Phase 1 key is still read once for migration. */
+/** Phase 2+ key; Phase 1 key is still read once for migration. */
 export const STORAGE_KEY = "easie-fase2-v1";
 export const STORAGE_KEY_V1 = "easie-fase1-v1";
+
+export const EMPTY_RESULTS: ProductResults = {
+  clicks: 0,
+  sales: 0,
+  commission: "",
+};

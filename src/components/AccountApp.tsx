@@ -1,25 +1,51 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
-import { LogIn, LogOut, UserPlus } from "lucide-react";
+import { useRef, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
+import {
+  BarChart3,
+  Download,
+  LogIn,
+  LogOut,
+  Trash2,
+  Upload,
+  UserPlus,
+} from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import { useToast } from "./ToastProvider";
 import {
+  downloadTextFile,
+  exportStoreToCsv,
+  importStoreFromCsv,
+} from "@/lib/csv";
+import { createDefaultTemplate } from "@/lib/templates";
+import {
   getServerSnapshot,
   getStoreSnapshot,
+  hydrateStore,
   replaceStore,
   subscribeStore,
 } from "@/lib/storage";
 
 export function AccountApp() {
-  const { user, loading, cloud, authMode, login, signup, logout, pushStore } =
-    useAuth();
+  const {
+    user,
+    loading,
+    cloud,
+    authMode,
+    login,
+    signup,
+    logout,
+    deleteAccount,
+    pushStore,
+  } = useAuth();
   const { showToast } = useToast();
   const store = useSyncExternalStore(
     subscribeStore,
     getStoreSnapshot,
     getServerSnapshot,
   );
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [name, setName] = useState("");
@@ -59,6 +85,58 @@ export function AccountApp() {
   async function handleLogout() {
     await logout();
     showToast("Sessão encerrada. Dados locais continuam neste aparelho.");
+  }
+
+  function handleExport() {
+    const csv = exportStoreToCsv(store);
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadTextFile(`easie-backup-${stamp}.csv`, csv, "text/csv;charset=utf-8");
+    showToast("Backup CSV baixado.");
+  }
+
+  async function handleImportFile(file: File) {
+    const text = await file.text();
+    const result = importStoreFromCsv(text);
+    if (!result.ok) {
+      showToast(result.error, "error");
+      return;
+    }
+    const ok = window.confirm(
+      "Importar este backup substitui os dados atuais deste aparelho (e da conta, se estiver logado). Continuar?",
+    );
+    if (!ok) return;
+    hydrateStore(result.store);
+    if (cloud) await pushStore(result.store);
+    showToast("Backup importado.");
+  }
+
+  async function handleDeleteAccount() {
+    const ok = window.confirm(
+      "Excluir permanentemente sua conta e todos os dados na nuvem? Esta ação não pode ser desfeita.",
+    );
+    if (!ok) return;
+    const typed = window.prompt('Digite EXCLUIR para confirmar:');
+    if (typed !== "EXCLUIR") {
+      showToast("Exclusão cancelada.", "error");
+      return;
+    }
+    setBusy(true);
+    const err = await deleteAccount();
+    setBusy(false);
+    if (err) {
+      showToast(err, "error");
+      return;
+    }
+    replaceStore({
+      products: [],
+      lastProduct: null,
+      templates: [createDefaultTemplate()],
+      variations: [],
+      groups: [],
+      postings: [],
+      settings: { repostWindowDays: 7 },
+    });
+    showToast("Conta e dados na nuvem excluídos.");
   }
 
   return (
@@ -200,12 +278,48 @@ export function AccountApp() {
                 )}
               </button>
               <p className="helper">
-                Sem conta, o app continua no navegador (Fase 1). Com conta, os dados
-                ficam na nuvem (SQLite local / arquivo do servidor).
+                Sem conta, o app continua no navegador. Com conta, os dados ficam na
+                nuvem (SQLite no servidor).
               </p>
             </form>
           </div>
         )}
+      </section>
+
+      <section className="section" aria-labelledby="backup-heading">
+        <h2 id="backup-heading" className="page-title" style={{ fontSize: "1.125rem" }}>
+          Backup CSV
+        </h2>
+        <div className="surface stack-gap">
+          <p className="helper" style={{ margin: 0 }}>
+            Exporte tudo (produtos, grupos, modelos, postagens e resultados) para
+            trocar de aparelho ou guardar uma cópia. Importe o mesmo arquivo para
+            restaurar.
+          </p>
+          <button type="button" className="btn btn-secondary btn-block" onClick={handleExport}>
+            <Download size={18} aria-hidden />
+            Exportar CSV
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-block"
+            onClick={() => fileRef.current?.click()}
+          >
+            <Upload size={18} aria-hidden />
+            Importar CSV
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="sr-only"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) void handleImportFile(file);
+            }}
+          />
+        </div>
       </section>
 
       <section className="section" aria-labelledby="settings-heading">
@@ -246,6 +360,36 @@ export function AccountApp() {
           </div>
         </div>
       </section>
+
+      <section className="section">
+        <Link href="/relatorios" className="btn btn-secondary btn-block">
+          <BarChart3 size={18} aria-hidden />
+          Ver relatórios
+        </Link>
+      </section>
+
+      {user ? (
+        <section className="section" aria-labelledby="danger-heading">
+          <h2 id="danger-heading" className="page-title" style={{ fontSize: "1.125rem" }}>
+            Zona de risco
+          </h2>
+          <div className="surface stack-gap">
+            <p className="helper" style={{ margin: 0 }}>
+              Apaga a conta na nuvem e todos os dados associados. Exporte um CSV antes,
+              se quiser guardar.
+            </p>
+            <button
+              type="button"
+              className="btn btn-danger btn-block"
+              disabled={busy}
+              onClick={() => void handleDeleteAccount()}
+            >
+              <Trash2 size={18} aria-hidden />
+              Excluir conta
+            </button>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -33,6 +33,10 @@ export function HistoryApp() {
         <p className="page-sub">
           Produtos já divulgados, com data e grupos em que você marcou postado.
         </p>
+        <p className="helper" style={{ marginTop: 8 }}>
+          <Link href="/relatorios">Registrar resultados</Link> (cliques, vendas,
+          comissão) ou ver posts da semana.
+        </p>
       </header>
 
       <section className="section">
