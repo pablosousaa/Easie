@@ -101,9 +101,9 @@ export type MigratePayload = {
 };
 
 export const TEMPLATE_VARIABLES = [
-  { key: "{{nome}}", label: "Nome do produto" },
-  { key: "{{preco}}", label: "Preço" },
-  { key: "{{link}}", label: "Link de afiliado" },
+  { key: "{{nome}}", label: "Nome do produto (ou [PRODUTO])" },
+  { key: "{{preco}}", label: "Preço (ou [PREÇO])" },
+  { key: "{{link}}", label: "Link de afiliado (ou [LINK])" },
   { key: "{{frete}}", label: "Frete (grátis ou vazio)" },
   { key: "{{entrega}}", label: "Entrega rápida (ou vazio)" },
 ] as const;

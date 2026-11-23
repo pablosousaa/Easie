@@ -30,8 +30,9 @@ export function TemplatesApp() {
       <header className="page-header">
         <h1 className="page-title">Modelos de texto</h1>
         <p className="page-sub">
-          Crie modelos com variáveis. O padrão vale para Geral; modelos por categoria
-          (ex.: Natal) entram quando o produto tem a mesma categoria.
+          Crie e edite modelos com {"{{nome}}"} / {"{{preco}}"} / {"{{link}}"}{" "}
+          (também [PRODUTO], [PREÇO], [LINK]). Em Gerar você escolhe qual modelo
+          usar. Categoria no produto ainda sugere o modelo correspondente.
         </p>
       </header>
 

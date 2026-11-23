@@ -6,7 +6,7 @@ import type {
   TemplateRow,
   UserRow,
 } from "./db/types";
-import { createDefaultTemplate, createSeasonalTemplate } from "./templates";
+import { createAdTemplates } from "./templates";
 import { createId, nowIso } from "./ids";
 import type {
   EasieStore,
@@ -147,26 +147,22 @@ export async function seedDefaultTemplate(userId: string): Promise<void> {
   );
   if (existing) return;
 
-  const tpl = createDefaultTemplate(createId("tpl"));
-  await sqlRun(
-    `INSERT INTO templates (id, user_id, name, content, is_default, updated_at, category)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [tpl.id, userId, tpl.name, tpl.content, 1, nowIso(), tpl.category ?? ""],
-  );
-  const seasonal = createSeasonalTemplate(createId("tpl"));
-  await sqlRun(
-    `INSERT INTO templates (id, user_id, name, content, is_default, updated_at, category)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [
-      seasonal.id,
-      userId,
-      seasonal.name,
-      seasonal.content,
-      0,
-      nowIso(),
-      seasonal.category ?? "",
-    ],
-  );
+  const templates = createAdTemplates(() => createId("tpl"));
+  for (const tpl of templates) {
+    await sqlRun(
+      `INSERT INTO templates (id, user_id, name, content, is_default, updated_at, category)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        tpl.id,
+        userId,
+        tpl.name,
+        tpl.content,
+        tpl.isDefault ? 1 : 0,
+        nowIso(),
+        tpl.category ?? "",
+      ],
+    );
+  }
 }
 
 export async function loadUserStore(userId: string): Promise<EasieStore> {
@@ -193,7 +189,7 @@ export async function loadUserStore(userId: string): Promise<EasieStore> {
   const mappedTemplates =
     templateRows.length > 0
       ? templateRows.map(mapTemplate)
-      : [createDefaultTemplate(), createSeasonalTemplate()];
+      : createAdTemplates();
 
   const prefs = await sqlGet<{ taken_ids: string; hidden_ids: string }>(
     "SELECT taken_ids, hidden_ids FROM user_trending_prefs WHERE user_id = ?",

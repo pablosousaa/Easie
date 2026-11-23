@@ -22,7 +22,10 @@ import {
   subscribeStore,
   upsertLastProduct,
 } from "@/lib/storage";
-import { pickTemplateForCategory } from "@/lib/templates";
+import {
+  findTemplateById,
+  pickTemplateForCategory,
+} from "@/lib/templates";
 
 export function GeneratorApp() {
   const { showToast } = useToast();
@@ -40,10 +43,12 @@ export function GeneratorApp() {
     if (cloud) await pushStore(next);
   }
 
-  async function handleGenerate(draft: ProductDraft) {
+  async function handleGenerate(draft: ProductDraft, templateId: string) {
     setGenerating(true);
     try {
-      const template = pickTemplateForCategory(store.templates, draft.category);
+      const template =
+        findTemplateById(store.templates, templateId) ??
+        pickTemplateForCategory(store.templates, draft.category);
       const variations = generateVariations(draft, template.content, 4);
 
       const product: Product = {
@@ -98,7 +103,7 @@ export function GeneratorApp() {
       <header className="page-header">
         <h1 className="page-title">Gerar</h1>
         <p className="page-sub">
-          Cadastre o produto, gere variações e copie com um toque
+          Cadastre o produto, escolha o modelo e gere variações
         </p>
       </header>
 
@@ -109,6 +114,7 @@ export function GeneratorApp() {
         <ProductForm
           key={`${initial.name}|${initial.affiliateLink}|${initial.price}`}
           initial={initial}
+          templates={store.templates}
           onGenerate={handleGenerate}
           generating={generating}
         />
