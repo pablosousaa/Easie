@@ -2,7 +2,7 @@
 
 Sistema web (SaaS-style) para afiliados do Mercado Livre que divulgam produtos em grupos do Facebook. O envio final é sempre **manual** (sem automação).
 
-- Landing em `/` · workspace em `/gerar` (sidebar no desktop, bottom nav no mobile)
+- Landing em `/` · workspace em `/gerar` (login obrigatório; sidebar no desktop, bottom nav no mobile)
 - Visual: UI escura graphite + neon (Absolute UI + Unslop), pt-BR, mobile-first
 
 ## Fase 2 — Controle por grupo + contas
@@ -11,8 +11,8 @@ Sistema web (SaaS-style) para afiliados do Mercado Livre que divulgam produtos e
 - Checklist por produto: pendente / postado / ignorado, abrir grupo + copiar texto, variação sugerida por grupo, aviso de re-post, progresso
 - Fila de produtos e histórico com datas/grupos
 - Contas individuais (e-mail/senha); dados privados por usuário em SQLite no servidor
-- Migração opcional do `localStorage` (Fase 1) ao criar a conta
-- Geração/cópia de textos da Fase 1 continua funcionando (também offline no navegador)
+- **Login obrigatório** para o workspace (sem modo convidado / localStorage-only)
+- Migração opcional de dados antigos do aparelho ao criar a conta
 - UI pt-BR, mobile-first
 
 ## Fase 3 — Backup e relatórios

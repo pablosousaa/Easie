@@ -47,7 +47,7 @@ export function LandingPage() {
             <Link href="/conta" className="mkt-link">
               Entrar
             </Link>
-            <Link href="/gerar" className="btn btn-primary btn-sm">
+            <Link href="/conta?next=%2Fgerar" className="btn btn-primary btn-sm">
               Começar
               <ArrowRight size={16} strokeWidth={1.5} aria-hidden />
             </Link>
@@ -67,12 +67,12 @@ export function LandingPage() {
               envio no Facebook continua manual — como deve ser.
             </p>
             <div className="mkt-hero__cta">
-              <Link href="/gerar" className="btn btn-primary btn-lg">
-                Abrir o workspace
+              <Link href="/conta?next=%2Fgerar" className="btn btn-primary btn-lg">
+                Criar conta e abrir
                 <ArrowRight size={18} strokeWidth={1.5} aria-hidden />
               </Link>
               <Link href="/conta" className="btn btn-secondary btn-lg">
-                Criar conta
+                Já tenho conta
               </Link>
             </div>
           </div>
@@ -165,9 +165,9 @@ export function LandingPage() {
         <section className="mkt-cta">
           <div className="mkt-cta__box">
             <h2>Pronto para organizar a divulgação</h2>
-            <p>Abra o workspace e gere o primeiro post em menos de um minuto.</p>
-            <Link href="/gerar" className="btn btn-primary btn-lg">
-              Começar agora
+            <p>Crie sua conta e gere o primeiro post em menos de um minuto.</p>
+            <Link href="/conta?next=%2Fgerar" className="btn btn-primary btn-lg">
+              Criar conta
               <ArrowRight size={18} strokeWidth={1.5} aria-hidden />
             </Link>
           </div>

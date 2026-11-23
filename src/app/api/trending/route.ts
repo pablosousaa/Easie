@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
+import { requireUser } from "@/lib/auth";
 import { getTrendingList } from "@/lib/trending";
 
 export async function GET(request: Request) {
+  const user = await requireUser();
+  if (!user) {
+    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  }
+
   const url = new URL(request.url);
   const categoryId = url.searchParams.get("category") || undefined;
   const q = url.searchParams.get("q") || undefined;

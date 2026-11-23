@@ -1,8 +1,9 @@
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
+import { SESSION_COOKIE } from "./auth-constants";
 import { findUserById } from "./user-data";
 
-export const SESSION_COOKIE = "easie_session";
+export { SESSION_COOKIE };
 
 type SessionPayload = {
   sub: string;

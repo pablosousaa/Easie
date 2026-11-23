@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
+import { requireUser } from "@/lib/auth";
 import { lookupFromAffiliateLink } from "@/lib/ml/lookup";
 
 export async function POST(request: Request) {
+  const user = await requireUser();
+  if (!user) {
+    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  }
+
   let body: { url?: string };
   try {
     body = (await request.json()) as { url?: string };

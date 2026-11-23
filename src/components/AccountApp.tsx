@@ -1,7 +1,14 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore } from "react";
+import {
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   BarChart3,
   Download,
@@ -21,14 +28,30 @@ import {
 } from "@/lib/csv";
 import { createDefaultTemplate } from "@/lib/templates";
 import {
+  clearPersistedStore,
   getServerSnapshot,
   getStoreSnapshot,
   hydrateStore,
+  peekLocalStoreForMigrate,
   replaceStore,
   subscribeStore,
 } from "@/lib/storage";
 
-export function AccountApp() {
+function safeNextPath(raw: string | null): string {
+  if (!raw) return "/gerar";
+  try {
+    const decoded = decodeURIComponent(raw);
+    if (decoded.startsWith("/") && !decoded.startsWith("//")) return decoded;
+  } catch {
+    /* ignore */
+  }
+  return "/gerar";
+}
+
+function AccountAppInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = safeNextPath(searchParams.get("next"));
   const {
     user,
     loading,
@@ -47,6 +70,7 @@ export function AccountApp() {
     getServerSnapshot,
   );
   const fileRef = useRef<HTMLInputElement>(null);
+  const [hasLegacyLocal, setHasLegacyLocal] = useState(false);
 
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [name, setName] = useState("");
@@ -55,6 +79,10 @@ export function AccountApp() {
   const [migrateLocal, setMigrateLocal] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setHasLegacyLocal(Boolean(peekLocalStoreForMigrate()));
+  }, [user]);
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
@@ -70,6 +98,7 @@ export function AccountApp() {
       return;
     }
     showToast(mode === "login" ? "Login ok — dados na nuvem" : "Conta criada");
+    router.replace(nextPath);
   }
 
   async function saveWindow() {
@@ -85,7 +114,8 @@ export function AccountApp() {
 
   async function handleLogout() {
     await logout();
-    showToast("Sessão encerrada — dados locais continuam neste aparelho");
+    showToast("Sessão encerrada");
+    router.replace("/conta");
   }
 
   function handleExport() {
@@ -103,7 +133,7 @@ export function AccountApp() {
       return;
     }
     const ok = window.confirm(
-      "Importar este backup substitui os dados atuais deste aparelho (e da conta, se estiver logado). Continuar?",
+      "Importar este backup substitui os dados atuais da conta. Continuar?",
     );
     if (!ok) return;
     hydrateStore(result.store);
@@ -128,6 +158,7 @@ export function AccountApp() {
       showToast(err, "error");
       return;
     }
+    clearPersistedStore();
     replaceStore({
       products: [],
       lastProduct: null,
@@ -140,6 +171,7 @@ export function AccountApp() {
       trendingHiddenIds: [],
     });
     showToast("Conta e dados na nuvem excluídos");
+    router.replace("/conta");
   }
 
   return (
@@ -147,7 +179,9 @@ export function AccountApp() {
       <header className="page-header">
         <h1 className="page-title">Conta</h1>
         <p className="page-sub">
-          Sessão, backup e preferências deste aparelho
+          {user
+            ? "Sessão, backup e preferências — dados só da sua conta"
+            : "Entre ou crie uma conta para usar o Easie"}
         </p>
       </header>
 
@@ -177,6 +211,9 @@ export function AccountApp() {
                 AUTH_SECRET em produção.
               </p>
             ) : null}
+            <Link href="/gerar" className="btn btn-primary btn-block">
+              Abrir workspace
+            </Link>
             <button
               type="button"
               className="btn btn-secondary btn-block"
@@ -188,6 +225,15 @@ export function AccountApp() {
           </div>
         ) : (
           <div className="surface">
+            <div className="callout callout--next" style={{ marginBottom: 16 }}>
+              <div className="callout__body">
+                <p className="callout__title">Login obrigatório</p>
+                <p className="helper">
+                  O workspace é privado por conta. Sem sessão não há modo
+                  convidado.
+                </p>
+              </div>
+            </div>
             <div className="segmented" role="tablist" aria-label="Tipo de acesso">
               <button
                 type="button"
@@ -256,7 +302,9 @@ export function AccountApp() {
                   id="acc-password"
                   className={`input${error ? " input--error" : ""}`}
                   type="password"
-                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  autoComplete={
+                    mode === "login" ? "current-password" : "new-password"
+                  }
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -266,7 +314,7 @@ export function AccountApp() {
                   aria-describedby={error ? "acc-error" : "acc-hint"}
                 />
               </div>
-              {mode === "signup" ? (
+              {mode === "signup" && hasLegacyLocal ? (
                 <label className="toggle">
                   <input
                     type="checkbox"
@@ -276,7 +324,7 @@ export function AccountApp() {
                   />
                   <span className="toggle-control" aria-hidden />
                   <span className="toggle-text">
-                    Trazer dados deste aparelho para a conta
+                    Trazer dados antigos deste aparelho para a conta
                   </span>
                 </label>
               ) : null}
@@ -286,8 +334,8 @@ export function AccountApp() {
                 </p>
               ) : (
                 <p id="acc-hint" className="helper">
-                  Sem conta o app funciona no navegador. Com conta, os dados ficam
-                  na nuvem.
+                  Depois do login você vai para o workspace. Dados ficam na
+                  nuvem, só na sua conta.
                 </p>
               )}
               <button
@@ -314,113 +362,132 @@ export function AccountApp() {
         )}
       </section>
 
-      <section className="section" aria-labelledby="backup-heading">
-        <h2 id="backup-heading" className="section-title">
-          Backup CSV
-        </h2>
-        <div className="surface stack-gap">
-          <p className="helper" style={{ margin: 0 }}>
-            Exporte para trocar de aparelho. Importe o mesmo arquivo para
-            restaurar.
-          </p>
-          <button
-            type="button"
-            className="btn btn-secondary btn-block"
-            onClick={handleExport}
-          >
-            <Download size={18} aria-hidden />
-            Exportar CSV
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary btn-block"
-            onClick={() => fileRef.current?.click()}
-          >
-            <Upload size={18} aria-hidden />
-            Importar CSV
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".csv,text/csv"
-            className="sr-only"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              e.target.value = "";
-              if (file) void handleImportFile(file);
-            }}
-          />
-        </div>
-      </section>
-
-      <section className="section" aria-labelledby="settings-heading">
-        <h2 id="settings-heading" className="section-title">
-          Re-post
-        </h2>
-        <div className="surface">
-          <div className="field">
-            <label className="label" htmlFor="repost-days">
-              Dias mínimos entre o mesmo produto no mesmo grupo
-            </label>
-            <input
-              id="repost-days"
-              className="input"
-              type="number"
-              min={1}
-              max={90}
-              value={store.settings.repostWindowDays}
-              onChange={(e) => {
-                const value = Number.parseInt(e.target.value, 10);
-                replaceStore({
-                  ...store,
-                  settings: {
-                    repostWindowDays: Number.isFinite(value) ? value : 7,
-                  },
-                });
-              }}
-            />
-          </div>
-          <div className="actions">
-            <button
-              type="button"
-              className="btn btn-secondary btn-block"
-              onClick={() => void saveWindow()}
-            >
-              Salvar preferência
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="section">
-        <Link href="/relatorios" className="btn btn-secondary btn-block">
-          <BarChart3 size={18} aria-hidden />
-          Ver relatórios
-        </Link>
-      </section>
-
       {user ? (
-        <section className="section" aria-labelledby="danger-heading">
-          <h2 id="danger-heading" className="section-title">
-            Zona de risco
-          </h2>
-          <div className="surface stack-gap">
-            <p className="helper" style={{ margin: 0 }}>
-              Apaga a conta na nuvem e todos os dados. Exporte um CSV antes se
-              quiser guardar.
-            </p>
-            <button
-              type="button"
-              className="btn btn-danger btn-block"
-              disabled={busy}
-              onClick={() => void handleDeleteAccount()}
-            >
-              <Trash2 size={18} aria-hidden />
-              Excluir conta
-            </button>
-          </div>
-        </section>
+        <>
+          <section className="section" aria-labelledby="backup-heading">
+            <h2 id="backup-heading" className="section-title">
+              Backup CSV
+            </h2>
+            <div className="surface stack-gap">
+              <p className="helper" style={{ margin: 0 }}>
+                Exporte para trocar de aparelho. Importe o mesmo arquivo para
+                restaurar na conta.
+              </p>
+              <button
+                type="button"
+                className="btn btn-secondary btn-block"
+                onClick={handleExport}
+              >
+                <Download size={18} aria-hidden />
+                Exportar CSV
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn-block"
+                onClick={() => fileRef.current?.click()}
+              >
+                <Upload size={18} aria-hidden />
+                Importar CSV
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".csv,text/csv"
+                className="sr-only"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) void handleImportFile(file);
+                }}
+              />
+            </div>
+          </section>
+
+          <section className="section" aria-labelledby="settings-heading">
+            <h2 id="settings-heading" className="section-title">
+              Re-post
+            </h2>
+            <div className="surface">
+              <div className="field">
+                <label className="label" htmlFor="repost-days">
+                  Dias mínimos entre o mesmo produto no mesmo grupo
+                </label>
+                <input
+                  id="repost-days"
+                  className="input"
+                  type="number"
+                  min={1}
+                  max={90}
+                  value={store.settings.repostWindowDays}
+                  onChange={(e) => {
+                    const value = Number.parseInt(e.target.value, 10);
+                    replaceStore({
+                      ...store,
+                      settings: {
+                        repostWindowDays: Number.isFinite(value) ? value : 7,
+                      },
+                    });
+                  }}
+                />
+              </div>
+              <div className="actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-block"
+                  onClick={() => void saveWindow()}
+                >
+                  Salvar preferência
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section className="section">
+            <Link href="/relatorios" className="btn btn-secondary btn-block">
+              <BarChart3 size={18} aria-hidden />
+              Ver relatórios
+            </Link>
+          </section>
+
+          <section className="section" aria-labelledby="danger-heading">
+            <h2 id="danger-heading" className="section-title">
+              Zona de risco
+            </h2>
+            <div className="surface stack-gap">
+              <p className="helper" style={{ margin: 0 }}>
+                Apaga a conta na nuvem e todos os dados. Exporte um CSV antes se
+                quiser guardar.
+              </p>
+              <button
+                type="button"
+                className="btn btn-danger btn-block"
+                disabled={busy}
+                onClick={() => void handleDeleteAccount()}
+              >
+                <Trash2 size={18} aria-hidden />
+                Excluir conta
+              </button>
+            </div>
+          </section>
+        </>
       ) : null}
     </div>
+  );
+}
+
+export function AccountApp() {
+  return (
+    <Suspense
+      fallback={
+        <div className="page">
+          <div className="surface stack-gap" aria-busy="true">
+            <div className="skeleton skeleton--line" style={{ width: "40%" }} />
+            <div className="skeleton skeleton--btn" />
+          </div>
+        </div>
+      }
+    >
+      <AccountAppInner />
+    </Suspense>
   );
 }
