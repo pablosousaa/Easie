@@ -15,7 +15,37 @@ export function createDefaultTemplate(id = "tpl-default"): TextTemplate {
     content: DEFAULT_TEMPLATE_CONTENT,
     isDefault: true,
     updatedAt: DEFAULT_TEMPLATE_UPDATED_AT,
+    category: "",
   };
+}
+
+export const SEASONAL_TEMPLATE_CONTENT = `🎄 Oferta de temporada: {{nome}}
+💰 Só {{preco}}
+🚚 {{frete}} · 📦 {{entrega}}
+Garanta o seu 👉 {{link}}`;
+
+export function createSeasonalTemplate(id = "tpl-natal"): TextTemplate {
+  return {
+    id,
+    name: "Natal / sazonal",
+    content: SEASONAL_TEMPLATE_CONTENT,
+    isDefault: false,
+    updatedAt: DEFAULT_TEMPLATE_UPDATED_AT,
+    category: "natal",
+  };
+}
+
+/** Prefer a template matching the product category; else the default; else first. */
+export function pickTemplateForCategory(
+  templates: TextTemplate[],
+  category: string | undefined,
+): TextTemplate {
+  const cat = (category ?? "").trim();
+  if (cat) {
+    const match = templates.find((t) => t.category === cat);
+    if (match) return match;
+  }
+  return templates.find((t) => t.isDefault) ?? templates[0] ?? createDefaultTemplate();
 }
 
 export { createId } from "./ids";

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, Plus, Star, Trash2 } from "lucide-react";
 import type { TextTemplate } from "@/lib/types";
 import { TEMPLATE_VARIABLES } from "@/lib/types";
+import { PRODUCT_CATEGORIES, categoryLabel } from "@/lib/categories";
 import { createId } from "@/lib/templates";
 import { useToast } from "./ToastProvider";
 
@@ -43,6 +44,7 @@ export function TemplateEditor({ templates, onChange }: Props) {
       content: `✨ {{nome}}\n💰 {{preco}}\n{{frete}} {{entrega}}\n👉 {{link}}`,
       isDefault: templates.length === 0,
       updatedAt: new Date().toISOString(),
+      category: "",
     };
     onChange([...templates, tpl]);
     setEditingId(tpl.id);
@@ -127,6 +129,9 @@ export function TemplateEditor({ templates, onChange }: Props) {
                       Padrão
                     </span>
                   ) : null}
+                  <span className="badge badge--muted" style={{ flexShrink: 0 }}>
+                    {categoryLabel(tpl.category)}
+                  </span>
                 </div>
                 <div style={{ display: "flex", gap: 4 }}>
                   {!tpl.isDefault ? (
@@ -166,6 +171,26 @@ export function TemplateEditor({ templates, onChange }: Props) {
                       value={tpl.name}
                       onChange={(e) => updateEditing({ name: e.target.value })}
                     />
+                  </div>
+                  <div className="field">
+                    <label className="label" htmlFor={`tpl-cat-${tpl.id}`}>
+                      Categoria / sazonalidade
+                    </label>
+                    <select
+                      id={`tpl-cat-${tpl.id}`}
+                      className="input"
+                      value={tpl.category ?? ""}
+                      onChange={(e) => updateEditing({ category: e.target.value })}
+                    >
+                      {PRODUCT_CATEGORIES.map((c) => (
+                        <option key={c.id || "geral"} value={c.id}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="helper">
+                      Na geração, o modelo desta categoria é preferido ao padrão.
+                    </p>
                   </div>
                   <div className="field">
                     <label className="label" htmlFor={`tpl-content-${tpl.id}`}>

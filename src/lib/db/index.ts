@@ -135,6 +135,17 @@ function migrateSchema(sqlite: DatabaseSync) {
   if (!names.has("commission")) {
     sqlite.exec("ALTER TABLE products ADD COLUMN commission TEXT NOT NULL DEFAULT ''");
   }
+  if (!names.has("category")) {
+    sqlite.exec("ALTER TABLE products ADD COLUMN category TEXT NOT NULL DEFAULT ''");
+  }
+
+  const tplCols = sqlite
+    .prepare("PRAGMA table_info(templates)")
+    .all() as Array<{ name: string }>;
+  const tplNames = new Set(tplCols.map((c) => c.name));
+  if (!tplNames.has("category")) {
+    sqlite.exec("ALTER TABLE templates ADD COLUMN category TEXT NOT NULL DEFAULT ''");
+  }
 }
 
 export function getSqlite(): DatabaseSync {

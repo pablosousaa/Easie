@@ -4,6 +4,8 @@ export type ProductDraft = {
   price: string;
   freeShipping: boolean;
   fastDelivery: boolean;
+  /** Product category id (RF04 / RF12), empty = Geral. */
+  category: string;
 };
 
 export type ProductStatus = "draft" | "queued" | "active" | "done" | "archived";
@@ -30,6 +32,8 @@ export type TextTemplate = {
   content: string;
   isDefault: boolean;
   updatedAt: string;
+  /** Empty = applies to all (Geral). Seasonal e.g. "natal" (RF12). */
+  category: string;
 };
 
 export type TextVariation = {

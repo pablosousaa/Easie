@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
-import { Pencil, Plus, Power, Trash2 } from "lucide-react";
+import { useRef, useState, useSyncExternalStore } from "react";
+import { FileUp, Pencil, Plus, Power, Trash2 } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import { useToast } from "./ToastProvider";
 import type { FacebookGroup } from "@/lib/types";
 import { createId, nowIso } from "@/lib/ids";
+import { draftsToGroups, parseGroupsImport } from "@/lib/groups-import";
 import {
   getServerSnapshot,
   getStoreSnapshot,
@@ -31,6 +32,9 @@ export function GroupsApp() {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<typeof emptyForm>>({});
+  const [importText, setImportText] = useState("");
+  const [showImport, setShowImport] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   async function persist(next: typeof store) {
     replaceStore(next);
@@ -129,15 +133,112 @@ export function GroupsApp() {
     showToast("Grupo removido.");
   }
 
+  async function runImport(raw: string) {
+    const parsed = parseGroupsImport(raw);
+    if (!parsed.ok) {
+      showToast(parsed.error, "error");
+      return;
+    }
+    const existingLinks = new Set(store.groups.map((g) => g.link.trim().toLowerCase()));
+    const fresh = parsed.groups.filter(
+      (g) => !existingLinks.has(g.link.trim().toLowerCase()),
+    );
+    if (fresh.length === 0) {
+      showToast("Nenhum grupo novo (links já cadastrados).", "error");
+      return;
+    }
+    const added = draftsToGroups(fresh);
+    await persist({ ...store, groups: [...store.groups, ...added] });
+    setImportText("");
+    setShowImport(false);
+    const skipNote =
+      parsed.skipped > 0 || fresh.length < parsed.groups.length
+        ? ` (${parsed.groups.length - fresh.length + parsed.skipped} ignorados)`
+        : "";
+    showToast(`${added.length} grupo(s) importado(s)${skipNote}.`);
+  }
+
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = typeof reader.result === "string" ? reader.result : "";
+      void runImport(text);
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }
+
   return (
     <div className="page">
       <header className="page-header">
         <h1 className="page-title">Grupos do Facebook</h1>
         <p className="page-sub">
           Cadastre nome, link, tema e regras. Desative grupos bloqueados sem apagar o
-          histórico.
+          histórico. Importe por colagem ou planilha CSV.
         </p>
       </header>
+
+      <section className="section" aria-labelledby="import-grupos">
+        <div className="section-head">
+          <h2 id="import-grupos" className="page-title" style={{ fontSize: "1.125rem" }}>
+            Importar lista
+          </h2>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => setShowImport((v) => !v)}
+          >
+            {showImport ? "Fechar" : "Abrir"}
+          </button>
+        </div>
+        {showImport ? (
+          <div className="surface">
+            <p className="helper">
+              CSV com cabeçalho <code>nome,link,tema,regras</code>, linhas{" "}
+              <code>Nome | https://… | tema | regras</code>, ou um link por linha.
+            </p>
+            <div className="field" style={{ marginTop: 12 }}>
+              <label className="label" htmlFor="groups-import">
+                Colar texto ou CSV
+              </label>
+              <textarea
+                id="groups-import"
+                className="textarea"
+                rows={6}
+                placeholder={"nome,link,tema,regras\nOfertas Casa,https://facebook.com/groups/123,casa,"}
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+              />
+            </div>
+            <div className="actions">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => void runImport(importText)}
+              >
+                Importar colagem
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => fileRef.current?.click()}
+              >
+                <FileUp size={16} strokeWidth={1.5} aria-hidden />
+                Arquivo CSV
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".csv,.txt,text/csv,text/plain"
+                className="sr-only"
+                onChange={onFile}
+              />
+            </div>
+          </div>
+        ) : null}
+      </section>
 
       <section className="section" aria-labelledby="form-grupo">
         <h2 id="form-grupo" className="page-title" style={{ fontSize: "1.125rem" }}>

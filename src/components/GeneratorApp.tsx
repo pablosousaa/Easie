@@ -14,7 +14,6 @@ import { generateVariations } from "@/lib/generate";
 import { createId, nowIso } from "@/lib/ids";
 import { ensureChecklist } from "@/lib/checklist";
 import {
-  getDefaultTemplate,
   getServerSnapshot,
   getStoreSnapshot,
   replaceStore,
@@ -22,6 +21,7 @@ import {
   subscribeStore,
   upsertLastProduct,
 } from "@/lib/storage";
+import { pickTemplateForCategory } from "@/lib/templates";
 
 export function GeneratorApp() {
   const { showToast } = useToast();
@@ -38,7 +38,7 @@ export function GeneratorApp() {
   }
 
   async function handleGenerate(draft: ProductDraft) {
-    const template = getDefaultTemplate(store.templates);
+    const template = pickTemplateForCategory(store.templates, draft.category);
     const variations = generateVariations(draft, template.content, 4);
 
     const product: Product = {

@@ -11,15 +11,19 @@ import type {
   UserSettings,
 } from "./types";
 import { EMPTY_RESULTS, STORAGE_KEY, STORAGE_KEY_V1 } from "./types";
-import { createDefaultTemplate } from "./templates";
+import { createDefaultTemplate, createSeasonalTemplate } from "./templates";
 
 const listeners = new Set<() => void>();
 let memoryCache: EasieStore | null = null;
 
+function seedTemplates(): TextTemplate[] {
+  return [createDefaultTemplate(), createSeasonalTemplate()];
+}
+
 const SERVER_SNAPSHOT: EasieStore = {
   products: [],
   lastProduct: null,
-  templates: [createDefaultTemplate()],
+  templates: seedTemplates(),
   variations: [],
   groups: [],
   postings: [],
@@ -32,7 +36,7 @@ function defaultStore(): EasieStore {
   return {
     products: [],
     lastProduct: null,
-    templates: [createDefaultTemplate()],
+    templates: seedTemplates(),
     variations: [],
     groups: [],
     postings: [],
@@ -54,6 +58,7 @@ function asDraft(value: unknown): ProductDraft | null {
     price: typeof p.price === "string" ? p.price : "",
     freeShipping: Boolean(p.freeShipping),
     fastDelivery: Boolean(p.fastDelivery),
+    category: typeof p.category === "string" ? p.category : "",
   };
 }
 
@@ -61,7 +66,7 @@ function normalize(parsed: Partial<EasieStore>): EasieStore {
   const templates =
     parsed.templates && parsed.templates.length > 0
       ? parsed.templates
-      : [createDefaultTemplate()];
+      : seedTemplates();
 
   if (!templates.some((t) => t.isDefault)) {
     templates[0] = { ...templates[0], isDefault: true };
@@ -78,16 +83,22 @@ function normalize(parsed: Partial<EasieStore>): EasieStore {
     ? (parsed.products as Product[]).map((p) => ({
         ...EMPTY_RESULTS,
         ...p,
+        category: typeof p.category === "string" ? p.category : "",
         clicks: Number.isFinite(p.clicks) ? p.clicks : 0,
         sales: Number.isFinite(p.sales) ? p.sales : 0,
         commission: typeof p.commission === "string" ? p.commission : "",
       }))
     : [];
 
+  const templatesNormalized = templates.map((t) => ({
+    ...t,
+    category: typeof t.category === "string" ? t.category : "",
+  }));
+
   return {
     products,
     lastProduct: asDraft(parsed.lastProduct) ?? null,
-    templates,
+    templates: templatesNormalized,
     variations: Array.isArray(parsed.variations)
       ? (parsed.variations as TextVariation[])
       : [],

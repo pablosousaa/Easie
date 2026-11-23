@@ -7,6 +7,7 @@ export function emptyProduct(): ProductDraft {
     price: "",
     freeShipping: false,
     fastDelivery: false,
+    category: "",
   };
 }
 

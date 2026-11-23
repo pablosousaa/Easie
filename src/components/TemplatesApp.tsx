@@ -30,7 +30,8 @@ export function TemplatesApp() {
       <header className="page-header">
         <h1 className="page-title">Modelos de texto</h1>
         <p className="page-sub">
-          Crie modelos com variáveis. O modelo marcado como padrão é usado ao gerar posts.
+          Crie modelos com variáveis. O padrão vale para Geral; modelos por categoria
+          (ex.: Natal) entram quando o produto tem a mesma categoria.
         </p>
       </header>
 
