@@ -154,8 +154,10 @@ function AccountAppInner() {
     router.replace("/conta");
   }
 
+  const guest = !loading && !user;
+
   return (
-    <div className="page">
+    <div className={`page${guest ? " page--auth" : ""}`}>
       <header className="page-header">
         <h1 className="page-title">Conta</h1>
         <p className="page-sub">
@@ -399,7 +401,7 @@ export function AccountApp() {
   return (
     <Suspense
       fallback={
-        <div className="page">
+        <div className="page page--auth">
           <div className="surface stack-gap" aria-busy="true">
             <div className="skeleton skeleton--line" style={{ width: "40%" }} />
             <div className="skeleton skeleton--btn" />

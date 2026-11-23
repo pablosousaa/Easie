@@ -73,7 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const showNav = Boolean(user);
 
   return (
-    <div className="saas-app">
+    <div className={`saas-app${showNav ? "" : " saas-app--auth"}`}>
       {showNav ? (
         <aside className="saas-sidebar" aria-label="Navegação do aplicativo">
           <div className="saas-sidebar__brand">
