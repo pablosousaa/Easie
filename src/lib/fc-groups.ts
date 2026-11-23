@@ -1,11 +1,13 @@
 /**
  * Shared Facebook (FC) group catalog — seeded into every account.
- * Source: docs/grupos-fc.txt (Project store). Re-runs match by normalized link.
+ * Source: docs/grupos-fc.txt. Re-runs match by normalized link and
+ * refresh name + category (theme) without duplicating.
  */
 
 export type FcGroupDef = {
   name: string;
   link: string;
+  /** Category shown as "Categoria" in Grupos (stored in `theme`). */
   theme: string;
 };
 
@@ -13,99 +15,99 @@ export type FcGroupDef = {
 export const FC_GROUPS_CREATED_AT = "2026-03-23T00:00:00.000Z";
 
 /**
- * Canonical links from grupos_fc (query/share junk stripped).
+ * Canonical catalog from grupos_fc (query/share junk stripped).
  * 12 /groups/… + 6 /share/g/… = 18.
  */
 export const FC_GROUP_DEFS: readonly FcGroupDef[] = [
   {
-    name: "promoela",
+    name: "Somente Para Elas",
     link: "https://www.facebook.com/groups/promoela",
-    theme: "FC",
+    theme: "Beleza Feminina",
   },
   {
-    name: "572069607067931",
+    name: "Mamães de primeira viagem",
     link: "https://www.facebook.com/groups/572069607067931",
-    theme: "FC",
+    theme: "Beleza Feminina",
   },
   {
-    name: "392504605445448",
+    name: "Maquiagem para todas",
     link: "https://www.facebook.com/groups/392504605445448",
-    theme: "FC",
+    theme: "Beleza Feminina",
   },
   {
-    name: "3885835001543448",
+    name: "Achadinhos das mulheres",
     link: "https://www.facebook.com/groups/3885835001543448",
-    theme: "FC",
+    theme: "Beleza Feminina",
   },
   {
-    name: "1561757468025026",
+    name: "Achadinho da Shopee e Mercado livre",
     link: "https://www.facebook.com/groups/1561757468025026",
-    theme: "FC",
+    theme: "Geral",
   },
   {
-    name: "1784689826261468",
+    name: "Wepink",
     link: "https://www.facebook.com/groups/1784689826261468",
-    theme: "FC",
+    theme: "Beleza Feminina",
   },
   {
-    name: "849740553304995",
+    name: "ACHEI NA SHOPEE",
     link: "https://www.facebook.com/groups/849740553304995",
-    theme: "FC",
+    theme: "Geral",
   },
   {
-    name: "1056547333109665",
+    name: "ACHADOS E OFERTAS BR - SHOPEE",
     link: "https://www.facebook.com/groups/1056547333109665",
-    theme: "FC",
+    theme: "Geral",
   },
   {
-    name: "2875826839408792",
+    name: "Mercado livre",
     link: "https://www.facebook.com/groups/2875826839408792",
-    theme: "FC",
+    theme: "Geral",
   },
   {
-    name: "26443437675252848",
+    name: "Desapegos wepink",
     link: "https://www.facebook.com/groups/26443437675252848",
-    theme: "FC",
+    theme: "Beleza Feminina",
   },
   {
-    name: "308659827229692",
+    name: "GRUPO DE ROUPAS",
     link: "https://www.facebook.com/groups/308659827229692",
-    theme: "FC",
+    theme: "Moda Feminina",
   },
   {
-    name: "1439081967330329",
+    name: "Vendas do mercado livre",
     link: "https://www.facebook.com/groups/1439081967330329",
-    theme: "FC",
+    theme: "Geral",
   },
   {
-    name: "14vYBLt9q6s",
+    name: "Decoração de Natal",
     link: "https://www.facebook.com/share/g/14vYBLt9q6s",
-    theme: "FC",
+    theme: "Natal",
   },
   {
-    name: "1AAiUqxWET",
+    name: "Natal e outras festas",
     link: "https://www.facebook.com/share/g/1AAiUqxWET",
-    theme: "FC",
+    theme: "Natal",
   },
   {
-    name: "1E9AJ6j1sp",
+    name: "Loucos por Natal",
     link: "https://www.facebook.com/share/g/1E9AJ6j1sp",
-    theme: "FC",
+    theme: "Natal",
   },
   {
-    name: "1AQtwotQ25",
+    name: "Decoração de natal - serviços - fornecedores",
     link: "https://www.facebook.com/share/g/1AQtwotQ25",
-    theme: "FC",
+    theme: "Natal",
   },
   {
-    name: "1HWbo55xjw",
+    name: "A Magia Do Natal",
     link: "https://www.facebook.com/share/g/1HWbo55xjw",
-    theme: "FC",
+    theme: "Natal",
   },
   {
-    name: "1FT3pJ9hL8",
+    name: "Vendas de Enfeites de Natal",
     link: "https://www.facebook.com/share/g/1FT3pJ9hL8",
-    theme: "FC",
+    theme: "Natal",
   },
 ] as const;
 

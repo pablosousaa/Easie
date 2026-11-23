@@ -173,26 +173,46 @@ export async function seedDefaultTemplate(userId: string): Promise<void> {
 /**
  * Upsert the shared FC group catalog into one account.
  * Matches by normalized Facebook link — never duplicates, never removes custom groups.
+ * When a match exists, refreshes name + category (theme) from the catalog.
  */
 export async function seedSharedGroups(
   userId: string,
-): Promise<{ inserted: number; skipped: number }> {
+): Promise<{ inserted: number; updated: number; skipped: number }> {
   await ready();
-  const existing = await sqlAll<{ id: string; link: string }>(
-    "SELECT id, link FROM groups WHERE user_id = ?",
-    [userId],
-  );
-  const have = new Set(
-    existing.map((g) => normalizeGroupLink(g.link)).filter(Boolean),
-  );
+  const existing = await sqlAll<{
+    id: string;
+    link: string;
+    name: string;
+    theme: string;
+  }>("SELECT id, link, name, theme FROM groups WHERE user_id = ?", [userId]);
+
+  const byNorm = new Map<
+    string,
+    { id: string; link: string; name: string; theme: string }
+  >();
+  for (const g of existing) {
+    const norm = normalizeGroupLink(g.link);
+    if (norm) byNorm.set(norm, g);
+  }
 
   let inserted = 0;
+  let updated = 0;
   let skipped = 0;
 
   for (const def of FC_GROUP_DEFS) {
     const norm = normalizeGroupLink(def.link);
-    if (have.has(norm)) {
-      skipped++;
+    const match = byNorm.get(norm);
+    if (match) {
+      if (match.name !== def.name || match.theme !== def.theme) {
+        await sqlRun("UPDATE groups SET name = ?, theme = ? WHERE id = ?", [
+          def.name,
+          def.theme,
+          match.id,
+        ]);
+        updated++;
+      } else {
+        skipped++;
+      }
       continue;
     }
     await sqlRun(
@@ -208,29 +228,37 @@ export async function seedSharedGroups(
         FC_GROUPS_CREATED_AT,
       ],
     );
-    have.add(norm);
+    byNorm.set(norm, {
+      id: "",
+      link: def.link,
+      name: def.name,
+      theme: def.theme,
+    });
     inserted++;
   }
 
-  return { inserted, skipped };
+  return { inserted, updated, skipped };
 }
 
 /** Seed FC groups for every user (idempotent). Used by scripts / redeploy. */
 export async function seedSharedGroupsForAllUsers(): Promise<{
   users: number;
   inserted: number;
+  updated: number;
   skipped: number;
 }> {
   await ready();
   const users = await sqlAll<{ id: string }>("SELECT id FROM users");
   let inserted = 0;
+  let updated = 0;
   let skipped = 0;
   for (const u of users) {
     const r = await seedSharedGroups(u.id);
     inserted += r.inserted;
+    updated += r.updated;
     skipped += r.skipped;
   }
-  return { users: users.length, inserted, skipped };
+  return { users: users.length, inserted, updated, skipped };
 }
 
 export async function loadUserStore(userId: string): Promise<EasieStore> {

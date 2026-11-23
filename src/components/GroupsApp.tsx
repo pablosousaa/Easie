@@ -175,7 +175,7 @@ export function GroupsApp() {
       <header className="page-header">
         <h1 className="page-title">Grupos do Facebook</h1>
         <p className="page-sub">
-          Cadastre nome, link, tema e regras. Desative grupos bloqueados sem apagar o
+          Cadastre nome, link, categoria e regras. Desative grupos bloqueados sem apagar o
           histórico. Importe por colagem ou planilha CSV.
         </p>
       </header>
@@ -196,8 +196,8 @@ export function GroupsApp() {
         {showImport ? (
           <div className="surface">
             <p className="helper">
-              CSV com cabeçalho <code>nome,link,tema,regras</code>, linhas{" "}
-              <code>Nome | https://… | tema | regras</code>, ou um link por linha.
+              CSV com cabeçalho <code>nome,link,categoria,regras</code>, linhas{" "}
+              <code>Nome | https://… | categoria | regras</code>, ou um link por linha.
             </p>
             <div className="field" style={{ marginTop: 12 }}>
               <label className="label" htmlFor="groups-import">
@@ -207,7 +207,7 @@ export function GroupsApp() {
                 id="groups-import"
                 className="textarea"
                 rows={6}
-                placeholder={"nome,link,tema,regras\nOfertas Casa,https://facebook.com/groups/123,casa,"}
+                placeholder={"nome,link,categoria,regras\nOfertas Casa,https://facebook.com/groups/123,Natal,"}
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
               />
@@ -280,12 +280,12 @@ export function GroupsApp() {
           </div>
           <div className="field">
             <label className="label" htmlFor="group-theme">
-              Tema
+              Categoria
             </label>
             <input
               id="group-theme"
               className="input"
-              placeholder="Ex.: natal, casa, eletrônicos"
+              placeholder="Ex.: Beleza Feminina, Natal, Geral"
               value={form.theme}
               onChange={(e) => setForm((f) => ({ ...f, theme: e.target.value }))}
             />
@@ -340,7 +340,7 @@ export function GroupsApp() {
                     </span>
                   </div>
                   {group.theme ? (
-                    <p className="helper">Tema: {group.theme}</p>
+                    <p className="helper">Categoria: {group.theme}</p>
                   ) : null}
                   {group.rules ? (
                     <p className="helper clamp-2">{group.rules}</p>
