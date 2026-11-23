@@ -1,36 +1,37 @@
 @import "tailwindcss";
 
 :root {
-  /* Eclipse / Refero — 3 colors only */
-  --ink: #0a0a0a;
-  --paper: #ffffff;
+  /* Eclipse / Refero — 3 colors (Ink/Paper inverted: dark UI) */
+  --ink: #ffffff;
+  --paper: #0a0a0a;
   --neon: #a1fea0;
-  --border-ink: #0a0a0a;
+  --on-neon: #0a0a0a; /* always dark on neon fills — Absolute UI contrast */
+  --border-ink: #ffffff;
 
   /* Compat aliases used across components */
-  --color-primary-50: #eefee9;
-  --color-primary-100: #d9fdcf;
+  --color-primary-50: #1a2e18;
+  --color-primary-100: #243d20;
   --color-primary-200: #a1fea0;
   --color-primary-500: #a1fea0;
   --color-primary-600: #a1fea0;
-  --color-primary-700: #0a0a0a;
-  --color-primary-800: #0a0a0a;
+  --color-primary-700: #ffffff;
+  --color-primary-800: #ffffff;
 
-  --color-accent-500: #0a0a0a;
-  --color-accent-600: #0a0a0a;
-  --color-accent-700: #0a0a0a;
+  --color-accent-500: #ffffff;
+  --color-accent-600: #ffffff;
+  --color-accent-700: #ffffff;
 
-  --color-success-600: #0a0a0a;
-  --color-danger-600: #b91c1c;
+  --color-success-600: #a1fea0;
+  --color-danger-600: #f87171;
 
-  --bg-primary: #ffffff;
-  --bg-surface: #ffffff;
-  --bg-muted: #f4f4f4;
-  --text-primary: #0a0a0a;
-  --text-secondary: #404040;
-  --text-muted: #737373;
-  --border: #0a0a0a;
-  --border-strong: #0a0a0a;
+  --bg-primary: #0a0a0a;
+  --bg-surface: #0a0a0a;
+  --bg-muted: #161616;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-muted: #8a8a8a;
+  --border: #ffffff;
+  --border-strong: #ffffff;
 
   --radius: 25px;
   --radius-pill: 100px;
@@ -283,6 +284,11 @@ body {
 .toggle:has(input:checked) {
   background: var(--neon);
   border-color: var(--ink);
+  color: var(--on-neon);
+}
+
+.toggle:has(input:checked) .toggle-text {
+  color: var(--on-neon);
 }
 
 .toggle input {
@@ -297,7 +303,7 @@ body {
   width: 44px;
   height: 26px;
   border-radius: 999px;
-  background: #d4d4d4;
+  background: #404040;
   border: 1px solid var(--ink);
   position: relative;
   transition: background 150ms ease;
@@ -372,7 +378,7 @@ body {
 
 .btn-primary {
   background: var(--neon);
-  color: var(--ink);
+  color: var(--on-neon);
   border: 1px solid var(--ink);
 }
 
@@ -502,7 +508,7 @@ a.btn {
 
 .chip:hover {
   border-style: solid;
-  color: var(--ink);
+  color: var(--on-neon);
   background: var(--neon);
 }
 
@@ -656,6 +662,7 @@ a.btn {
 .template-card--default {
   border-color: var(--ink);
   background: var(--neon);
+  color: var(--on-neon);
 }
 
 .badge {
@@ -670,7 +677,7 @@ a.btn {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   background: var(--neon);
-  color: var(--ink);
+  color: var(--on-neon);
   border: 1px solid var(--ink);
 }
 
@@ -808,7 +815,7 @@ a.btn {
 }
 
 .icon-btn--danger:hover {
-  background: #fef2f2;
+  background: #3f1d1d;
   color: var(--color-danger-600);
   border-color: var(--color-danger-600);
 }
@@ -903,7 +910,7 @@ a.btn {
 
 .status-pill--posted {
   background: var(--neon);
-  color: var(--ink);
+  color: var(--on-neon);
 }
 
 .status-pill--ignored {
@@ -974,7 +981,7 @@ a.btn {
 
 .segmented button.is-active {
   background: var(--neon);
-  color: var(--ink);
+  color: var(--on-neon);
   box-shadow: none;
 }
 
@@ -994,7 +1001,7 @@ a.btn {
 }
 
 .btn-danger:hover {
-  background: #fef2f2;
+  background: #3f1d1d;
   border-width: 2px;
 }
 
@@ -1173,7 +1180,7 @@ a.btn {
 }
 
 .saas-tab.is-active {
-  color: var(--ink);
+  color: var(--on-neon);
   background: var(--neon);
 }
 
@@ -1247,7 +1254,7 @@ a.btn {
 
   .saas-nav-item.is-active {
     background: var(--neon);
-    color: var(--ink);
+    color: var(--on-neon);
     border-color: var(--ink);
   }
 
@@ -1459,7 +1466,7 @@ a.btn {
   margin: 0;
   max-width: 36rem;
   font-size: var(--text-lg);
-  color: rgba(255, 255, 255, 0.78);
+  color: color-mix(in srgb, var(--paper) 78%, transparent);
   line-height: 1.5;
   font-weight: 400;
   font-family: var(--font-body);
@@ -1476,7 +1483,7 @@ a.btn {
 
 .mkt-hero__cta .btn-primary {
   background: var(--neon);
-  color: var(--ink);
+  color: var(--on-neon);
   border-color: var(--neon);
 }
 
@@ -1813,12 +1820,12 @@ a.btn {
 
 .mkt-cta__box p {
   margin: 12px 0 24px;
-  color: rgba(255, 255, 255, 0.75);
+  color: color-mix(in srgb, var(--paper) 75%, transparent);
 }
 
 .mkt-cta__box .btn-primary {
   background: var(--neon);
-  color: var(--ink);
+  color: var(--on-neon);
   border-color: var(--neon);
 }
 
@@ -1851,7 +1858,7 @@ a.btn {
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.65);
+  color: color-mix(in srgb, var(--paper) 65%, transparent);
 }
 
 @keyframes appear {
