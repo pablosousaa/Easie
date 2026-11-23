@@ -1,5 +1,5 @@
-import { GeneratorApp } from "@/components/GeneratorApp";
+import { LandingPage } from "@/components/LandingPage";
 
 export default function HomePage() {
-  return <GeneratorApp />;
+  return <LandingPage />;
 }

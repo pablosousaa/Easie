@@ -131,10 +131,7 @@ export function GroupsApp() {
 
   return (
     <div className="page">
-      <header>
-        <p className="brand">
-          Easie<span>.</span>
-        </p>
+      <header className="page-header">
         <h1 className="page-title">Grupos do Facebook</h1>
         <p className="page-sub">
           Cadastre nome, link, tema e regras. Desative grupos bloqueados sem apagar o

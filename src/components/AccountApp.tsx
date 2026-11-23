@@ -141,10 +141,7 @@ export function AccountApp() {
 
   return (
     <div className="page">
-      <header>
-        <p className="brand">
-          Easie<span>.</span>
-        </p>
+      <header className="page-header">
         <h1 className="page-title">Conta</h1>
         <p className="page-sub">
           Ambiente individual: seus produtos, grupos e histórico ficam só na sua conta.

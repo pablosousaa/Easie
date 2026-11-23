@@ -25,10 +25,7 @@ export function HistoryApp() {
 
   return (
     <div className="page">
-      <header>
-        <p className="brand">
-          Easie<span>.</span>
-        </p>
+      <header className="page-header">
         <h1 className="page-title">Histórico</h1>
         <p className="page-sub">
           Produtos já divulgados, com data e grupos em que você marcou postado.

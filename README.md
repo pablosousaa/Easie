@@ -1,6 +1,9 @@
 # Easie
 
-Sistema web para afiliados do Mercado Livre que divulgam produtos em grupos do Facebook. O envio final é sempre **manual** (sem automação).
+Sistema web (SaaS-style) para afiliados do Mercado Livre que divulgam produtos em grupos do Facebook. O envio final é sempre **manual** (sem automação).
+
+- Landing em `/` · workspace em `/gerar` (sidebar no desktop, bottom nav no mobile)
+- Visual inspirado em [Launch UI](https://github.com/launch-ui/launch-ui), com Absolute UI + pt-BR + mobile-first
 
 ## Fase 2 — Controle por grupo + contas
 

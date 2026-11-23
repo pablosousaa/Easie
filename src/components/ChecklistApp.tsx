@@ -127,10 +127,7 @@ export function ChecklistApp({ productId }: Props) {
 
   return (
     <div className="page">
-      <header>
-        <p className="brand">
-          Easie<span>.</span>
-        </p>
+      <header className="page-header">
         <h1 className="page-title">{product.name}</h1>
         <p className="page-sub">
           Abra o grupo, copie o texto sugerido e marque postado. Sem automação — envio
