@@ -2,17 +2,22 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
-import { ArrowRight, History, Sparkles } from "lucide-react";
+import { ArrowRight, History, Sparkles, Trash2 } from "lucide-react";
 import { EmptyState } from "./EmptyState";
+import { useAuth } from "./AuthProvider";
+import { useToast } from "./ToastProvider";
 import {
   getServerSnapshot,
   getStoreSnapshot,
+  replaceStore,
   subscribeStore,
 } from "@/lib/storage";
 import { progressForProduct } from "@/lib/checklist";
 import { formatDatePt } from "@/lib/format";
 
 export function QueueApp() {
+  const { showToast } = useToast();
+  const { cloud, pushStore } = useAuth();
   const store = useSyncExternalStore(
     subscribeStore,
     getStoreSnapshot,
@@ -22,6 +27,28 @@ export function QueueApp() {
   const queue = store.products
     .filter((p) => p.status === "queued" || p.status === "active")
     .sort((a, b) => a.queueOrder - b.queueOrder || a.createdAt.localeCompare(b.createdAt));
+
+  async function persist(next: typeof store) {
+    replaceStore(next);
+    if (cloud) await pushStore(next);
+  }
+
+  async function removeFromQueue(productId: string, productName: string) {
+    if (
+      !window.confirm(
+        `Remover “${productName}” da fila? O checklist e as postagens deste produto também saem.`,
+      )
+    ) {
+      return;
+    }
+    const next = {
+      ...store,
+      products: store.products.filter((p) => p.id !== productId),
+      postings: store.postings.filter((p) => p.productId !== productId),
+    };
+    await persist(next);
+    showToast("Produto removido da fila.");
+  }
 
   return (
     <div className="page">
@@ -79,13 +106,23 @@ export function QueueApp() {
                       {progress.done} de {progress.total} grupos
                     </p>
                   </div>
-                  <Link
-                    href={`/checklist/${product.id}`}
-                    className="btn btn-primary btn-sm"
-                  >
-                    Abrir
-                    <ArrowRight size={16} aria-hidden />
-                  </Link>
+                  <div className="entity-card__actions">
+                    <Link
+                      href={`/checklist/${product.id}`}
+                      className="btn btn-primary btn-sm"
+                    >
+                      Abrir
+                      <ArrowRight size={16} aria-hidden />
+                    </Link>
+                    <button
+                      type="button"
+                      className="icon-btn icon-btn--danger"
+                      aria-label={`Remover ${product.name} da fila`}
+                      onClick={() => void removeFromQueue(product.id, product.name)}
+                    >
+                      <Trash2 size={18} aria-hidden />
+                    </button>
+                  </div>
                 </li>
               );
             })}
