@@ -558,6 +558,32 @@ a.btn {
   outline-offset: 2px;
 }
 
+.chip.is-active {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--ink) 36%, transparent);
+  background: var(--bg-muted);
+  color: var(--ink);
+}
+
+.chip-row--filter {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.filter-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.filter-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .bottom-nav {
   position: fixed;
   bottom: 0;

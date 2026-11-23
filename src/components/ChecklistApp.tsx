@@ -31,6 +31,14 @@ import {
 
 type Props = { productId: string };
 
+function categoryKey(theme: string | undefined): string {
+  return (theme ?? "").trim();
+}
+
+function categoryLabel(key: string): string {
+  return key || "Sem categoria";
+}
+
 export function ChecklistApp({ productId }: Props) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -41,6 +49,8 @@ export function ChecklistApp({ productId }: Props) {
     getServerSnapshot,
   );
   const [busyId, setBusyId] = useState<string | null>(null);
+  /** Empty set = show all categories. Non-empty = OR match. */
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const product = store.products.find((p) => p.id === productId);
 
@@ -71,6 +81,33 @@ export function ChecklistApp({ productId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only seed when checklist gaps appear
   }, [productId, product?.id, store.groups.length]);
 
+  const active = useMemo(
+    () => prepared.groups.filter((g) => g.active),
+    [prepared.groups],
+  );
+
+  const categories = useMemo(() => {
+    const keys = new Set<string>();
+    for (const g of active) keys.add(categoryKey(g.theme));
+    return [...keys].sort((a, b) =>
+      categoryLabel(a).localeCompare(categoryLabel(b), "pt-BR"),
+    );
+  }, [active]);
+
+  const filtered = useMemo(() => {
+    if (selectedCategories.length === 0) return active;
+    const allow = new Set(selectedCategories);
+    return active.filter((g) => allow.has(categoryKey(g.theme)));
+  }, [active, selectedCategories]);
+
+  const filterActive = selectedCategories.length > 0;
+
+  function toggleCategory(key: string) {
+    setSelectedCategories((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    );
+  }
+
   if (!product) {
     return (
       <div className="page">
@@ -89,7 +126,7 @@ export function ChecklistApp({ productId }: Props) {
   }
 
   const progress = progressForProduct(prepared, product.id);
-  const active = prepared.groups.filter((g) => g.active);
+
   const byGroup = new Map(
     prepared.postings
       .filter((p) => p.productId === product.id)
@@ -176,7 +213,16 @@ export function ChecklistApp({ productId }: Props) {
         </div>
       </header>
 
-      <section className="section">
+      <section className="section" aria-labelledby="checklist-grupos">
+        <div className="section-head">
+          <h2 id="checklist-grupos" className="section-title">
+            Grupos
+            {filterActive
+              ? ` (${filtered.length} de ${active.length})`
+              : ` (${active.length})`}
+          </h2>
+        </div>
+
         {active.length === 0 ? (
           <EmptyState
             title="Nenhum grupo ativo"
@@ -192,8 +238,69 @@ export function ChecklistApp({ productId }: Props) {
             </p>
           </EmptyState>
         ) : (
+          <>
+            {categories.length > 1 ? (
+              <div className="filter-panel">
+                <div className="filter-panel__head">
+                  <p className="label" id="filtro-categoria-label">
+                    Filtrar por categoria
+                  </p>
+                  {filterActive ? (
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setSelectedCategories([])}
+                    >
+                      Limpar
+                    </button>
+                  ) : null}
+                </div>
+                <p className="helper">
+                  Selecione uma ou mais. Sem filtro, todos os grupos aparecem.
+                </p>
+                <div
+                  className="chip-row chip-row--filter"
+                  role="group"
+                  aria-labelledby="filtro-categoria-label"
+                >
+                  {categories.map((key) => {
+                    const selected = selectedCategories.includes(key);
+                    return (
+                      <button
+                        key={key || "sem-categoria"}
+                        type="button"
+                        className={`chip${selected ? " is-active" : ""}`}
+                        aria-pressed={selected}
+                        onClick={() => toggleCategory(key)}
+                      >
+                        {categoryLabel(key)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+
+            {filtered.length === 0 ? (
+              <EmptyState
+                title="Nenhum grupo nestas categorias"
+                action={
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setSelectedCategories([])}
+                  >
+                    Limpar filtro
+                  </button>
+                }
+              >
+                <p className="helper">
+                  Tente outras categorias ou limpe o filtro.
+                </p>
+              </EmptyState>
+            ) : (
           <ul className="entity-list">
-            {active.map((group) => {
+            {filtered.map((group) => {
               const posting = byGroup.get(group.id);
               if (!posting) return null;
               const guard = checkRepostWindow(
@@ -219,9 +326,9 @@ export function ChecklistApp({ productId }: Props) {
                   <div className="checklist-card__head">
                     <div>
                       <h3 className="entity-card__title">{group.name}</h3>
-                      {group.theme ? (
-                        <p className="helper">Categoria: {group.theme}</p>
-                      ) : null}
+                      <p className="helper">
+                        Categoria: {categoryLabel(categoryKey(group.theme))}
+                      </p>
                     </div>
                     <span className={`status-pill status-pill--${posting.status}`}>
                       {statusLabel}
@@ -335,6 +442,8 @@ export function ChecklistApp({ productId }: Props) {
               );
             })}
           </ul>
+            )}
+          </>
         )}
       </section>
     </div>
