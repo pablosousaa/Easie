@@ -1,22 +1,16 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Loader2, Sparkles, Wand2 } from "lucide-react";
-import type { ProductDraft, TextTemplate } from "@/lib/types";
+import type { ProductDraft } from "@/lib/types";
 import { PRODUCT_CATEGORIES } from "@/lib/categories";
-import { pickTemplateForCategory } from "@/lib/templates";
 import { useToast } from "./ToastProvider";
 
 type Errors = Partial<Record<"affiliateLink" | "name" | "price", string>>;
 
 type Props = {
   initial: ProductDraft;
-  templates: TextTemplate[];
-  onGenerate: (
-    product: ProductDraft,
-    templateId: string,
-  ) => void | Promise<void>;
+  onGenerate: (product: ProductDraft) => void | Promise<void>;
   generating?: boolean;
 };
 
@@ -39,12 +33,7 @@ function validate(product: ProductDraft): Errors {
   return errors;
 }
 
-export function ProductForm({
-  initial,
-  templates,
-  onGenerate,
-  generating = false,
-}: Props) {
+export function ProductForm({ initial, onGenerate, generating = false }: Props) {
   const { showToast } = useToast();
   const [product, setProduct] = useState<ProductDraft>({
     ...initial,
@@ -52,22 +41,7 @@ export function ProductForm({
   });
   const [errors, setErrors] = useState<Errors>({});
   const [lookingUp, setLookingUp] = useState(false);
-  const [templateId, setTemplateId] = useState(
-    () => pickTemplateForCategory(templates, initial.category).id,
-  );
-  const [templateTouched, setTemplateTouched] = useState(false);
   const busy = lookingUp || generating;
-
-  useEffect(() => {
-    if (templateTouched) return;
-    setTemplateId(pickTemplateForCategory(templates, product.category).id);
-  }, [product.category, templates, templateTouched]);
-
-  useEffect(() => {
-    if (templates.some((t) => t.id === templateId)) return;
-    setTemplateId(pickTemplateForCategory(templates, product.category).id);
-    setTemplateTouched(false);
-  }, [templates, templateId, product.category]);
 
   function update<K extends keyof ProductDraft>(key: K, value: ProductDraft[K]) {
     setProduct((prev) => ({ ...prev, [key]: value }));
@@ -130,10 +104,7 @@ export function ProductForm({
     const nextErrors = validate(product);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
-    const tpl =
-      templates.find((t) => t.id === templateId) ??
-      pickTemplateForCategory(templates, product.category);
-    void onGenerate(product, tpl.id);
+    void onGenerate(product);
   }
 
   return (
@@ -247,40 +218,6 @@ export function ProductForm({
             </option>
           ))}
         </select>
-        <p className="helper">
-          Se o modelo ainda não foi escolhido à mão, a categoria sugere um
-        </p>
-      </div>
-
-      <div className="field">
-        <label className="label" htmlFor="template">
-          Modelo de texto
-        </label>
-        <select
-          id="template"
-          className="input"
-          value={templateId}
-          onChange={(e) => {
-            setTemplateId(e.target.value);
-            setTemplateTouched(true);
-          }}
-          aria-describedby="hint-template"
-        >
-          {templates.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-              {t.isDefault ? " (padrão)" : ""}
-              {t.category ? ` · ${t.category}` : ""}
-            </option>
-          ))}
-        </select>
-        <p id="hint-template" className="helper">
-          Use um modelo salvo. Edite em{" "}
-          <Link href="/modelos" className="text-link">
-            Modelos
-          </Link>
-          .
-        </p>
       </div>
 
       <div className="toggle-row" role="group" aria-label="Benefícios do produto">

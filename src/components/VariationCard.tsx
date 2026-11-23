@@ -29,12 +29,14 @@ export function VariationCard({ index, variation, onChange }: Props) {
   return (
     <article className="variation" style={{ animationDelay: `${index * 50}ms` }}>
       <div className="variation-header">
-        <span className="variation-label">Variação {index + 1}</span>
+        <span className="variation-label">
+          {variation.label?.trim() || `Variação ${index + 1}`}
+        </span>
         <button
           type="button"
           className="btn btn-secondary btn-sm"
           onClick={handleCopy}
-          aria-label={`Copiar variação ${index + 1}`}
+          aria-label={`Copiar ${variation.label?.trim() || `variação ${index + 1}`}`}
         >
           {copied ? (
             <Check size={16} strokeWidth={2.25} aria-hidden />
@@ -45,7 +47,7 @@ export function VariationCard({ index, variation, onChange }: Props) {
         </button>
       </div>
       <label className="sr-only" htmlFor={`var-${variation.id}`}>
-        Texto da variação {index + 1}
+        Texto de {variation.label?.trim() || `variação ${index + 1}`}
       </label>
       <textarea
         id={`var-${variation.id}`}

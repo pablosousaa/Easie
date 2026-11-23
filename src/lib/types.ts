@@ -39,6 +39,8 @@ export type TextTemplate = {
 export type TextVariation = {
   id: string;
   text: string;
+  /** Display name (e.g. "Oferta imperdível") when generated from a modelo. */
+  label?: string;
 };
 
 export type FacebookGroup = {

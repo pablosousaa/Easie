@@ -23,7 +23,6 @@ import { formatDateTimePt } from "@/lib/format";
 import { generateVariations } from "@/lib/generate";
 import { checkRepostWindow } from "@/lib/repost";
 import {
-  getDefaultTemplate,
   getServerSnapshot,
   getStoreSnapshot,
   replaceStore,
@@ -50,7 +49,7 @@ export function ChecklistApp({ productId }: Props) {
     const variations =
       store.variations.length > 0
         ? store.variations
-        : generateVariations(product, getDefaultTemplate(store.templates).content, 4);
+        : generateVariations(product, store.templates);
     return ensureChecklist(store, product, variations);
   }, [product, store]);
 
