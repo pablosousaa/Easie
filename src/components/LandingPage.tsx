@@ -58,13 +58,9 @@ export function LandingPage() {
 
       <main>
         <section className="mkt-hero">
-          <div className="mkt-hero__badge animate-appear">
-            <span>Feito para afiliados do Mercado Livre</span>
-            <Link href="/gerar">
-              Abrir app
-              <ArrowRight size={12} aria-hidden />
-            </Link>
-          </div>
+          <p className="mkt-hero__badge animate-appear">
+            Afiliados · Mercado Livre · envio manual
+          </p>
           <h1 className="mkt-hero__title animate-appear">
             Divulgue ofertas nos grupos — sem bagunça e sem robô
           </h1>

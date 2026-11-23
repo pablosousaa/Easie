@@ -1,13 +1,27 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Barlow_Condensed, Cormorant_Garamond, Space_Mono } from "next/font/google";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ToastProvider } from "@/components/ToastProvider";
 import "./globals.css";
 
-const plusJakarta = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta",
+const barlowCondensed = Barlow_Condensed({
+  variable: "--font-barlow-condensed",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin"],
+  weight: ["300", "400", "500"],
+  display: "swap",
+});
+
+const spaceMono = Space_Mono({
+  variable: "--font-space-mono",
+  subsets: ["latin"],
+  weight: ["400", "700"],
   display: "swap",
 });
 
@@ -21,12 +35,15 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#ea580c",
+  themeColor: "#0a0a0a",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pt-BR" className={`${plusJakarta.variable} h-full antialiased`}>
+    <html
+      lang="pt-BR"
+      className={`${barlowCondensed.variable} ${cormorant.variable} ${spaceMono.variable} h-full antialiased`}
+    >
       <body className="min-h-full">
         <ToastProvider>
           <AuthProvider>{children}</AuthProvider>
