@@ -25,6 +25,7 @@ type AuthContextValue = {
     migrateLocal: boolean,
   ) => Promise<string | null>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<string | null>;
   pushStore: (store?: EasieStore) => Promise<void>;
 };
 
@@ -133,6 +134,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    const res = await fetch("/api/auth/account", {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const data = (await res.json()) as { error?: string };
+    if (!res.ok) return data.error ?? "Não foi possível excluir a conta.";
+    setUser(null);
+    return null;
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -144,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         signup,
         logout,
+        deleteAccount,
         pushStore,
       }}
     >

@@ -1,0 +1,202 @@
+"use client";
+
+import { useEffect, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
+import { useAuth } from "./AuthProvider";
+import { countPosted, postsPerDay, sumResults } from "@/lib/reports";
+import {
+  getServerSnapshot,
+  getStoreSnapshot,
+  replaceStore,
+  subscribeStore,
+} from "@/lib/storage";
+import { formatDatePt } from "@/lib/format";
+
+export function ReportsApp() {
+  const { cloud, pushStore } = useAuth();
+  const store = useSyncExternalStore(
+    subscribeStore,
+    getStoreSnapshot,
+    getServerSnapshot,
+  );
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setNow(new Date());
+  }, []);
+
+  const counts = now ? countPosted(store, now) : { today: 0, week: 0, total: 0 };
+  const days = now ? postsPerDay(store, 7, now) : [];
+  const totals = sumResults(store.products);
+  const maxDay = Math.max(1, ...days.map((d) => d.count));
+
+  const tracked = [...store.products].sort((a, b) =>
+    (b.completedAt ?? b.createdAt).localeCompare(a.completedAt ?? a.createdAt),
+  );
+
+  async function persist(next: typeof store) {
+    replaceStore(next);
+    if (cloud) await pushStore(next);
+  }
+
+  async function updateResult(
+    productId: string,
+    patch: { clicks?: number; sales?: number; commission?: string },
+  ) {
+    const next = {
+      ...store,
+      products: store.products.map((p) =>
+        p.id === productId ? { ...p, ...patch } : p,
+      ),
+    };
+    await persist(next);
+  }
+
+  return (
+    <div className="page">
+      <header>
+        <p className="brand">
+          Easie<span>.</span>
+        </p>
+        <h1 className="page-title">Relatórios</h1>
+        <p className="page-sub">
+          Posts por dia e semana, e resultados manuais (cliques, vendas, comissão).
+        </p>
+      </header>
+
+      <section className="section" aria-labelledby="stats-heading">
+        <h2 id="stats-heading" className="page-title" style={{ fontSize: "1.125rem" }}>
+          Postagens
+        </h2>
+        {!now ? (
+          <div className="surface empty">Carregando…</div>
+        ) : (
+          <>
+            <div className="stat-grid">
+              <div className="stat-card">
+                <p className="stat-card__label">Hoje</p>
+                <p className="stat-card__value">{counts.today}</p>
+              </div>
+              <div className="stat-card">
+                <p className="stat-card__label">Esta semana</p>
+                <p className="stat-card__value">{counts.week}</p>
+              </div>
+              <div className="stat-card">
+                <p className="stat-card__label">Total</p>
+                <p className="stat-card__value">{counts.total}</p>
+              </div>
+            </div>
+
+            <div className="surface" style={{ marginTop: 12 }}>
+              <p className="helper" style={{ marginBottom: 12 }}>
+                Últimos 7 dias
+              </p>
+              <ul className="day-bars" aria-label="Posts por dia">
+                {days.map((d) => (
+                  <li key={d.date}>
+                    <span className="day-bars__label">{d.label}</span>
+                    <div className="day-bars__track" aria-hidden>
+                      <div
+                        className="day-bars__fill"
+                        style={{ width: `${(d.count / maxDay) * 100}%` }}
+                      />
+                    </div>
+                    <span className="day-bars__count">{d.count}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </>
+        )}
+      </section>
+
+      <section className="section" aria-labelledby="results-heading">
+        <div className="section-head">
+          <h2 id="results-heading" className="page-title" style={{ fontSize: "1.125rem" }}>
+            Resultados manuais
+          </h2>
+          <p className="helper" style={{ margin: 0 }}>
+            {totals.clicks} cliques · {totals.sales} vendas
+          </p>
+        </div>
+
+        {tracked.length === 0 ? (
+          <div className="surface empty">
+            Nenhum produto ainda. Gere um em <Link href="/">Gerar</Link>.
+          </div>
+        ) : (
+          <ul className="entity-list">
+            {tracked.map((product) => (
+              <li key={product.id} className="entity-card entity-card--stack">
+                <div className="entity-card__body">
+                  <h3 className="entity-card__title">{product.name}</h3>
+                  <p className="helper">
+                    {product.status} · {formatDatePt(product.createdAt)}
+                  </p>
+                </div>
+                <div className="results-grid">
+                  <div className="field">
+                    <label className="label" htmlFor={`clicks-${product.id}`}>
+                      Cliques
+                    </label>
+                    <input
+                      id={`clicks-${product.id}`}
+                      className="input"
+                      type="number"
+                      min={0}
+                      inputMode="numeric"
+                      value={product.clicks}
+                      onChange={(e) => {
+                        const clicks = Number.parseInt(e.target.value, 10);
+                        void updateResult(product.id, {
+                          clicks: Number.isFinite(clicks) ? Math.max(0, clicks) : 0,
+                        });
+                      }}
+                    />
+                  </div>
+                  <div className="field">
+                    <label className="label" htmlFor={`sales-${product.id}`}>
+                      Vendas
+                    </label>
+                    <input
+                      id={`sales-${product.id}`}
+                      className="input"
+                      type="number"
+                      min={0}
+                      inputMode="numeric"
+                      value={product.sales}
+                      onChange={(e) => {
+                        const sales = Number.parseInt(e.target.value, 10);
+                        void updateResult(product.id, {
+                          sales: Number.isFinite(sales) ? Math.max(0, sales) : 0,
+                        });
+                      }}
+                    />
+                  </div>
+                  <div className="field" style={{ gridColumn: "1 / -1" }}>
+                    <label className="label" htmlFor={`comm-${product.id}`}>
+                      Comissão
+                    </label>
+                    <input
+                      id={`comm-${product.id}`}
+                      className="input"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Ex.: 24,90"
+                      value={product.commission}
+                      onChange={(e) => {
+                        void updateResult(product.id, {
+                          commission: e.target.value,
+                        });
+                      }}
+                    />
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}

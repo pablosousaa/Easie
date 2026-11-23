@@ -10,7 +10,7 @@ import type {
   TextVariation,
   UserSettings,
 } from "./types";
-import { STORAGE_KEY, STORAGE_KEY_V1 } from "./types";
+import { EMPTY_RESULTS, STORAGE_KEY, STORAGE_KEY_V1 } from "./types";
 import { createDefaultTemplate } from "./templates";
 
 const listeners = new Set<() => void>();
@@ -70,8 +70,18 @@ function normalize(parsed: Partial<EasieStore>): EasieStore {
     ),
   };
 
+  const products = Array.isArray(parsed.products)
+    ? (parsed.products as Product[]).map((p) => ({
+        ...EMPTY_RESULTS,
+        ...p,
+        clicks: Number.isFinite(p.clicks) ? p.clicks : 0,
+        sales: Number.isFinite(p.sales) ? p.sales : 0,
+        commission: typeof p.commission === "string" ? p.commission : "",
+      }))
+    : [];
+
   return {
-    products: Array.isArray(parsed.products) ? (parsed.products as Product[]) : [],
+    products,
     lastProduct: asDraft(parsed.lastProduct) ?? null,
     templates,
     variations: Array.isArray(parsed.variations)
