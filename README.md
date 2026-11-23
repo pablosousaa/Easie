@@ -30,6 +30,12 @@ Sistema web (SaaS-style) para afiliados do Mercado Livre que divulgam produtos e
 - Marcar “já peguei” / ocultar; filtro por categoria e busca
 - Sem `ML_ACCESS_TOKEN`: tenta busca pública ML, senão lista demo (RF47: mantém último cache)
 
+## Fase 5 — Melhorias
+
+- **RF05:** Preencher nome/preço a partir do link de afiliado (`/api/ml/lookup`)
+- **RF17:** Importar grupos por colagem ou CSV em **Grupos**
+- **RF12:** Modelos por categoria / sazonalidade (ex.: Natal); geração escolhe o modelo certo
+
 ## Requisitos
 
 - **Node.js 22.13+** (usa o módulo nativo `node:sqlite` — sem compilação C++ / Visual Studio Build Tools no Windows)

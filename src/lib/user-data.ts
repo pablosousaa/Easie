@@ -25,6 +25,7 @@ function mapProduct(row: ProductRow): Product {
     price: row.price,
     freeShipping: Boolean(row.free_shipping),
     fastDelivery: Boolean(row.fast_delivery),
+    category: row.category ?? "",
     status: row.status,
     queueOrder: row.queue_order,
     createdAt: row.created_at,
@@ -54,6 +55,7 @@ function mapTemplate(row: TemplateRow): TextTemplate {
     content: row.content,
     isDefault: Boolean(row.is_default),
     updatedAt: row.updated_at,
+    category: row.category ?? "",
   };
 }
 
@@ -112,9 +114,9 @@ export function seedDefaultTemplate(userId: string) {
   if (existing) return;
   const tpl = createDefaultTemplate(createId("tpl"));
   db.prepare(
-    `INSERT INTO templates (id, user_id, name, content, is_default, updated_at)
-     VALUES (?, ?, ?, ?, 1, ?)`,
-  ).run(tpl.id, userId, tpl.name, tpl.content, nowIso());
+    `INSERT INTO templates (id, user_id, name, content, is_default, updated_at, category)
+     VALUES (?, ?, ?, ?, 1, ?, ?)`,
+  ).run(tpl.id, userId, tpl.name, tpl.content, nowIso(), tpl.category ?? "");
 }
 
 export function loadUserStore(userId: string): EasieStore {
@@ -196,8 +198,8 @@ export function migrateLocalData(userId: string, payload: MigratePayload) {
     db.prepare("DELETE FROM templates WHERE user_id = ?").run(userId);
     for (const tpl of payload.templates) {
       db.prepare(
-        `INSERT INTO templates (id, user_id, name, content, is_default, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO templates (id, user_id, name, content, is_default, updated_at, category)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         tpl.id || createId("tpl"),
         userId,
@@ -205,6 +207,7 @@ export function migrateLocalData(userId: string, payload: MigratePayload) {
         tpl.content,
         tpl.isDefault ? 1 : 0,
         tpl.updatedAt || nowIso(),
+        tpl.category ?? "",
       );
     }
     const after = db
@@ -246,8 +249,8 @@ export function migrateLocalData(userId: string, payload: MigratePayload) {
       db.prepare(
         `INSERT INTO products (
            id, user_id, affiliate_link, name, price, free_shipping, fast_delivery,
-           status, queue_order, created_at, completed_at, clicks, sales, commission
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           status, queue_order, created_at, completed_at, clicks, sales, commission, category
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         id,
         userId,
@@ -263,6 +266,7 @@ export function migrateLocalData(userId: string, payload: MigratePayload) {
         p.clicks ?? 0,
         p.sales ?? 0,
         p.commission ?? "",
+        p.category ?? "",
       );
     }
   }
@@ -301,8 +305,8 @@ export function migrateLocalData(userId: string, payload: MigratePayload) {
     db.prepare(
       `INSERT INTO products (
          id, user_id, affiliate_link, name, price, free_shipping, fast_delivery,
-         status, queue_order, created_at, completed_at, clicks, sales, commission
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', 0, ?, NULL, 0, 0, '')`,
+         status, queue_order, created_at, completed_at, clicks, sales, commission, category
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', 0, ?, NULL, 0, 0, '', ?)`,
     ).run(
       createId("prd"),
       userId,
@@ -312,6 +316,7 @@ export function migrateLocalData(userId: string, payload: MigratePayload) {
       lp.freeShipping ? 1 : 0,
       lp.fastDelivery ? 1 : 0,
       nowIso(),
+      lp.category ?? "",
     );
   }
 }
@@ -343,8 +348,8 @@ export function replaceUserStore(userId: string, store: EasieStore) {
 
   for (const tpl of store.templates) {
     db.prepare(
-      `INSERT INTO templates (id, user_id, name, content, is_default, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO templates (id, user_id, name, content, is_default, updated_at, category)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       tpl.id,
       userId,
@@ -352,6 +357,7 @@ export function replaceUserStore(userId: string, store: EasieStore) {
       tpl.content,
       tpl.isDefault ? 1 : 0,
       tpl.updatedAt || nowIso(),
+      tpl.category ?? "",
     );
   }
   if (store.templates.length === 0) {
@@ -378,8 +384,8 @@ export function replaceUserStore(userId: string, store: EasieStore) {
     db.prepare(
       `INSERT INTO products (
          id, user_id, affiliate_link, name, price, free_shipping, fast_delivery,
-         status, queue_order, created_at, completed_at, clicks, sales, commission
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         status, queue_order, created_at, completed_at, clicks, sales, commission, category
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       p.id,
       userId,
@@ -395,6 +401,7 @@ export function replaceUserStore(userId: string, store: EasieStore) {
       p.clicks ?? 0,
       p.sales ?? 0,
       p.commission ?? "",
+      p.category ?? "",
     );
   }
 

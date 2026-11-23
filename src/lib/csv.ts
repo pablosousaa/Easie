@@ -90,6 +90,7 @@ export function exportStoreToCsv(store: EasieStore): string {
       "clicks",
       "sales",
       "commission",
+      "category",
     ]),
   ];
 
@@ -109,6 +110,7 @@ export function exportStoreToCsv(store: EasieStore): string {
         p.clicks ?? 0,
         p.sales ?? 0,
         p.commission ?? "",
+        p.category ?? "",
       ]),
     );
   }
@@ -125,11 +127,18 @@ export function exportStoreToCsv(store: EasieStore): string {
 
   lines.push(
     "# section:templates",
-    row(["id", "name", "content", "isDefault", "updatedAt"]),
+    row(["id", "name", "content", "isDefault", "updatedAt", "category"]),
   );
   for (const t of store.templates) {
     lines.push(
-      row([t.id, t.name, t.content, boolCell(t.isDefault), t.updatedAt]),
+      row([
+        t.id,
+        t.name,
+        t.content,
+        boolCell(t.isDefault),
+        t.updatedAt,
+        t.category ?? "",
+      ]),
     );
   }
 
@@ -226,6 +235,7 @@ export function importStoreFromCsv(raw: string): CsvImportResult {
         price: obj.price ?? "",
         freeShipping: parseBool(obj.freeShipping),
         fastDelivery: parseBool(obj.fastDelivery),
+        category: obj.category ?? "",
         status: (obj.status as ProductStatus) || "queued",
         queueOrder: parseIntSafe(obj.queueOrder),
         createdAt: obj.createdAt || new Date().toISOString(),
@@ -251,6 +261,7 @@ export function importStoreFromCsv(raw: string): CsvImportResult {
         content: obj.content ?? "",
         isDefault: parseBool(obj.isDefault),
         updatedAt: obj.updatedAt || new Date().toISOString(),
+        category: obj.category ?? "",
       });
     } else if (section === "postings") {
       postings.push({

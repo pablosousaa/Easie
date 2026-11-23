@@ -54,6 +54,7 @@ function asDraft(value: unknown): ProductDraft | null {
     price: typeof p.price === "string" ? p.price : "",
     freeShipping: Boolean(p.freeShipping),
     fastDelivery: Boolean(p.fastDelivery),
+    category: typeof p.category === "string" ? p.category : "",
   };
 }
 
@@ -78,16 +79,22 @@ function normalize(parsed: Partial<EasieStore>): EasieStore {
     ? (parsed.products as Product[]).map((p) => ({
         ...EMPTY_RESULTS,
         ...p,
+        category: typeof p.category === "string" ? p.category : "",
         clicks: Number.isFinite(p.clicks) ? p.clicks : 0,
         sales: Number.isFinite(p.sales) ? p.sales : 0,
         commission: typeof p.commission === "string" ? p.commission : "",
       }))
     : [];
 
+  const templatesNormalized = templates.map((t) => ({
+    ...t,
+    category: typeof t.category === "string" ? t.category : "",
+  }));
+
   return {
     products,
     lastProduct: asDraft(parsed.lastProduct) ?? null,
-    templates,
+    templates: templatesNormalized,
     variations: Array.isArray(parsed.variations)
       ? (parsed.variations as TextVariation[])
       : [],

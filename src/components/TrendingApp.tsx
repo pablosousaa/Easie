@@ -208,6 +208,7 @@ export function TrendingApp() {
       price: confirmPrice.trim(),
       freeShipping: claimItem.freeShipping,
       fastDelivery: false,
+      category: "",
     };
 
     const trendingTakenIds = store.trendingTakenIds.includes(claimItem.mlItemId)

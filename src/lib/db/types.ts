@@ -24,6 +24,7 @@ export type ProductRow = {
   clicks: number;
   sales: number;
   commission: string;
+  category: string;
 };
 
 export type TemplateRow = {
@@ -33,6 +34,7 @@ export type TemplateRow = {
   content: string;
   is_default: number;
   updated_at: string;
+  category: string;
 };
 
 export type GroupRow = {
