@@ -8,13 +8,11 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { EasieStore, MigratePayload, PublicUser } from "@/lib/types";
+import type { EasieStore, PublicUser } from "@/lib/types";
 import {
   clearPersistedStore,
-  exportMigratePayload,
   getStoreSnapshot,
   hydrateStore,
-  peekLocalStoreForMigrate,
   resetMemoryStore,
 } from "@/lib/storage";
 
@@ -25,12 +23,6 @@ type AuthContextValue = {
   authMode: "dev" | "secure" | null;
   refresh: () => Promise<void>;
   login: (email: string, password: string) => Promise<string | null>;
-  signup: (
-    name: string,
-    email: string,
-    password: string,
-    migrateLocal: boolean,
-  ) => Promise<string | null>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<string | null>;
   pushStore: (store?: EasieStore) => Promise<void>;
@@ -72,7 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const store = await fetchCloudStore();
       if (store) hydrateStore(store);
     } else {
-      // No guest workspace — keep localStorage only for optional signup migrate.
       resetMemoryStore();
     }
     setLoading(false);
@@ -112,36 +103,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   }, []);
 
-  const signup = useCallback(
-    async (
-      name: string,
-      email: string,
-      password: string,
-      migrateLocal: boolean,
-    ) => {
-      let migrate: MigratePayload | undefined;
-      if (migrateLocal) {
-        const peeked = peekLocalStoreForMigrate();
-        migrate = peeked
-          ? exportMigratePayload(peeked)
-          : exportMigratePayload(getStoreSnapshot());
-      }
-      const res = await fetch("/api/auth/signup", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, migrate }),
-      });
-      const data = (await res.json()) as { error?: string; user?: PublicUser };
-      if (!res.ok) return data.error ?? "Falha ao criar conta";
-      setUser(data.user ?? null);
-      const store = await fetchCloudStore();
-      if (store) hydrateStore(store);
-      return null;
-    },
-    [],
-  );
-
   const logout = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     setUser(null);
@@ -169,7 +130,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authMode,
         refresh,
         login,
-        signup,
         logout,
         deleteAccount,
         pushStore,

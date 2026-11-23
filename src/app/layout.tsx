@@ -28,7 +28,7 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: "Easie — Workspace de divulgação para afiliados",
   description:
-    "Gere textos, controle grupos do Facebook e acompanhe o checklist de divulgação do Mercado Livre. Conta individual, backup e relatórios.",
+    "Gere textos, controle grupos do Facebook e acompanhe o checklist de divulgação do Mercado Livre. Acesso por conta individual.",
   applicationName: "Easie",
 };
 

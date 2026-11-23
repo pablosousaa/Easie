@@ -195,7 +195,7 @@ export function hydrateStore(next: EasieStore): void {
   emit();
 }
 
-/** In-memory empty store without wiping localStorage (keeps optional signup migrate). */
+/** In-memory empty store (logged-out). Does not wipe localStorage cache. */
 export function resetMemoryStore(): void {
   memoryCache = defaultStore();
   emit();
@@ -209,24 +209,6 @@ export function clearPersistedStore(): void {
     window.localStorage.removeItem(STORAGE_KEY_V1);
   }
   emit();
-}
-
-/** Read raw localStorage for one-time migrate on signup (no guest UI). */
-export function peekLocalStoreForMigrate(): EasieStore | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const store = normalize(JSON.parse(raw) as Partial<EasieStore>);
-    const hasData =
-      store.products.length > 0 ||
-      store.groups.length > 0 ||
-      store.postings.length > 0 ||
-      Boolean(store.lastProduct);
-    return hasData ? store : null;
-  } catch {
-    return null;
-  }
 }
 
 export function getDefaultTemplate(templates: TextTemplate[]): TextTemplate {

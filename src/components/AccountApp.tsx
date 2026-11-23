@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Suspense,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { Suspense, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -17,7 +11,6 @@ import {
   LogOut,
   Trash2,
   Upload,
-  UserPlus,
 } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import { useToast } from "./ToastProvider";
@@ -32,7 +25,6 @@ import {
   getServerSnapshot,
   getStoreSnapshot,
   hydrateStore,
-  peekLocalStoreForMigrate,
   replaceStore,
   subscribeStore,
 } from "@/lib/storage";
@@ -58,7 +50,6 @@ function AccountAppInner() {
     cloud,
     authMode,
     login,
-    signup,
     logout,
     deleteAccount,
     pushStore,
@@ -70,34 +61,23 @@ function AccountAppInner() {
     getServerSnapshot,
   );
   const fileRef = useRef<HTMLInputElement>(null);
-  const [hasLegacyLocal, setHasLegacyLocal] = useState(false);
 
-  const [mode, setMode] = useState<"login" | "signup">("login");
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [migrateLocal, setMigrateLocal] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setHasLegacyLocal(Boolean(peekLocalStoreForMigrate()));
-  }, [user]);
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const err =
-      mode === "login"
-        ? await login(email, password)
-        : await signup(name, email, password, migrateLocal);
+    const err = await login(email, password);
     setBusy(false);
     if (err) {
       setError(err);
       return;
     }
-    showToast(mode === "login" ? "Login ok — dados na nuvem" : "Conta criada");
+    showToast("Login ok — dados na nuvem");
     router.replace(nextPath);
   }
 
@@ -181,7 +161,7 @@ function AccountAppInner() {
         <p className="page-sub">
           {user
             ? "Sessão, backup e preferências — dados só da sua conta"
-            : "Entre ou crie uma conta para usar o Easie"}
+            : "Entre com a conta criada pelo administrador"}
         </p>
       </header>
 
@@ -227,58 +207,15 @@ function AccountAppInner() {
           <div className="surface">
             <div className="callout callout--next" style={{ marginBottom: 16 }}>
               <div className="callout__body">
-                <p className="callout__title">Login obrigatório</p>
+                <p className="callout__title">Acesso restrito</p>
                 <p className="helper">
-                  O workspace é privado por conta. Sem sessão não há modo
-                  convidado.
+                  Não há cadastro público. Peça uma conta ao administrador do
+                  Easie.
                 </p>
               </div>
             </div>
-            <div className="segmented" role="tablist" aria-label="Tipo de acesso">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={mode === "login"}
-                className={mode === "login" ? "is-active" : undefined}
-                onClick={() => {
-                  setMode("login");
-                  setError(null);
-                }}
-              >
-                Entrar
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={mode === "signup"}
-                className={mode === "signup" ? "is-active" : undefined}
-                onClick={() => {
-                  setMode("signup");
-                  setError(null);
-                }}
-              >
-                Criar conta
-              </button>
-            </div>
 
             <form className="stack-gap auth-form" onSubmit={handleAuth}>
-              {mode === "signup" ? (
-                <div className="field">
-                  <label className="label" htmlFor="acc-name">
-                    Nome
-                  </label>
-                  <input
-                    id="acc-name"
-                    className="input"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    minLength={2}
-                    disabled={busy}
-                    autoComplete="name"
-                  />
-                </div>
-              ) : null}
               <div className="field">
                 <label className="label" htmlFor="acc-email">
                   E-mail
@@ -292,6 +229,7 @@ function AccountAppInner() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={busy}
+                  autoFocus
                 />
               </div>
               <div className="field">
@@ -302,9 +240,7 @@ function AccountAppInner() {
                   id="acc-password"
                   className={`input${error ? " input--error" : ""}`}
                   type="password"
-                  autoComplete={
-                    mode === "login" ? "current-password" : "new-password"
-                  }
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -314,20 +250,6 @@ function AccountAppInner() {
                   aria-describedby={error ? "acc-error" : "acc-hint"}
                 />
               </div>
-              {mode === "signup" && hasLegacyLocal ? (
-                <label className="toggle">
-                  <input
-                    type="checkbox"
-                    checked={migrateLocal}
-                    onChange={(e) => setMigrateLocal(e.target.checked)}
-                    disabled={busy}
-                  />
-                  <span className="toggle-control" aria-hidden />
-                  <span className="toggle-text">
-                    Trazer dados antigos deste aparelho para a conta
-                  </span>
-                </label>
-              ) : null}
               {error ? (
                 <p id="acc-error" className="field__error" role="alert">
                   {error}
@@ -346,16 +268,10 @@ function AccountAppInner() {
               >
                 {busy ? (
                   <Loader2 size={18} className="spin" aria-hidden />
-                ) : mode === "login" ? (
-                  <LogIn size={18} aria-hidden />
                 ) : (
-                  <UserPlus size={18} aria-hidden />
+                  <LogIn size={18} aria-hidden />
                 )}
-                {busy
-                  ? "Aguarde…"
-                  : mode === "login"
-                    ? "Entrar"
-                    : "Criar conta"}
+                {busy ? "Aguarde…" : "Entrar"}
               </button>
             </form>
           </div>

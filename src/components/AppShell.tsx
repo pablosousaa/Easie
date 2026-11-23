@@ -120,11 +120,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link href="/conta" className="btn btn-ghost btn-sm">
                 {user.name.split(" ")[0]}
               </Link>
-            ) : (
-              <Link href="/" className="btn btn-ghost btn-sm">
-                Início
-              </Link>
-            )}
+            ) : null}
           </div>
         </header>
         <main className="saas-content">{children}</main>
