@@ -22,7 +22,7 @@ export async function GET() {
   if (!user) {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
-  const store = loadUserStore(user.id);
+  const store = await loadUserStore(user.id);
   return NextResponse.json({ store });
 }
 
@@ -44,7 +44,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   }
 
-  replaceUserStore(user.id, {
+  await replaceUserStore(user.id, {
     products: parsed.data.products,
     lastProduct: parsed.data.lastProduct,
     templates: parsed.data.templates,
@@ -56,5 +56,5 @@ export async function PUT(request: Request) {
     trendingHiddenIds: parsed.data.trendingHiddenIds,
   });
 
-  return NextResponse.json({ store: loadUserStore(user.id) });
+  return NextResponse.json({ store: await loadUserStore(user.id) });
 }

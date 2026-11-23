@@ -8,7 +8,7 @@ export async function DELETE() {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
 
-  deleteUserAccount(user.id);
+  await deleteUserAccount(user.id);
   await clearSessionCookie();
   return NextResponse.json({ ok: true });
 }
