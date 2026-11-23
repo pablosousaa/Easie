@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
-import type { Product } from "@/lib/types";
+import type { ProductDraft } from "@/lib/types";
 
 type Errors = Partial<Record<"affiliateLink" | "name" | "price", string>>;
 
 type Props = {
-  initial: Product;
-  onGenerate: (product: Product) => void;
+  initial: ProductDraft;
+  onGenerate: (product: ProductDraft) => void;
 };
 
-function validate(product: Product): Errors {
+function validate(product: ProductDraft): Errors {
   const errors: Errors = {};
   if (!product.affiliateLink.trim()) {
     errors.affiliateLink = "Informe o link de afiliado.";
@@ -32,10 +32,10 @@ function validate(product: Product): Errors {
 }
 
 export function ProductForm({ initial, onGenerate }: Props) {
-  const [product, setProduct] = useState<Product>(initial);
+  const [product, setProduct] = useState<ProductDraft>(initial);
   const [errors, setErrors] = useState<Errors>({});
 
-  function update<K extends keyof Product>(key: K, value: Product[K]) {
+  function update<K extends keyof ProductDraft>(key: K, value: ProductDraft[K]) {
     setProduct((prev) => ({ ...prev, [key]: value }));
     if (key in errors) {
       setErrors((prev) => {

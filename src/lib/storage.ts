@@ -1,18 +1,29 @@
 "use client";
 
-import type { EasieStore, Product, TextTemplate, TextVariation } from "./types";
-import { STORAGE_KEY } from "./types";
+import type {
+  EasieStore,
+  FacebookGroup,
+  Posting,
+  Product,
+  ProductDraft,
+  TextTemplate,
+  TextVariation,
+  UserSettings,
+} from "./types";
+import { STORAGE_KEY, STORAGE_KEY_V1 } from "./types";
 import { createDefaultTemplate } from "./templates";
 
 const listeners = new Set<() => void>();
 let memoryCache: EasieStore | null = null;
 
-/** Cached once — required by useSyncExternalStore getServerSnapshot. */
 const SERVER_SNAPSHOT: EasieStore = {
   products: [],
   lastProduct: null,
   templates: [createDefaultTemplate()],
   variations: [],
+  groups: [],
+  postings: [],
+  settings: { repostWindowDays: 7 },
 };
 
 function defaultStore(): EasieStore {
@@ -21,6 +32,24 @@ function defaultStore(): EasieStore {
     lastProduct: null,
     templates: [createDefaultTemplate()],
     variations: [],
+    groups: [],
+    postings: [],
+    settings: { repostWindowDays: 7 },
+  };
+}
+
+function asDraft(value: unknown): ProductDraft | null {
+  if (!value || typeof value !== "object") return null;
+  const p = value as Partial<ProductDraft>;
+  if (typeof p.affiliateLink !== "string" || typeof p.name !== "string") {
+    return null;
+  }
+  return {
+    affiliateLink: p.affiliateLink,
+    name: p.name,
+    price: typeof p.price === "string" ? p.price : "",
+    freeShipping: Boolean(p.freeShipping),
+    fastDelivery: Boolean(p.fastDelivery),
   };
 }
 
@@ -34,12 +63,47 @@ function normalize(parsed: Partial<EasieStore>): EasieStore {
     templates[0] = { ...templates[0], isDefault: true };
   }
 
-  return {
-    products: parsed.products ?? [],
-    lastProduct: parsed.lastProduct ?? null,
-    templates,
-    variations: parsed.variations ?? [],
+  const settings: UserSettings = {
+    repostWindowDays: Math.max(
+      1,
+      Number(parsed.settings?.repostWindowDays ?? 7) || 7,
+    ),
   };
+
+  return {
+    products: Array.isArray(parsed.products) ? (parsed.products as Product[]) : [],
+    lastProduct: asDraft(parsed.lastProduct) ?? null,
+    templates,
+    variations: Array.isArray(parsed.variations)
+      ? (parsed.variations as TextVariation[])
+      : [],
+    groups: Array.isArray(parsed.groups) ? (parsed.groups as FacebookGroup[]) : [],
+    postings: Array.isArray(parsed.postings) ? (parsed.postings as Posting[]) : [],
+    settings,
+  };
+}
+
+function migrateFromV1(): Partial<EasieStore> | null {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY_V1);
+    if (!raw) return null;
+    const v1 = JSON.parse(raw) as {
+      products?: ProductDraft[];
+      lastProduct?: ProductDraft | null;
+      templates?: TextTemplate[];
+      variations?: TextVariation[];
+    };
+    return {
+      lastProduct: v1.lastProduct ?? null,
+      templates: v1.templates,
+      variations: v1.variations ?? [],
+      products: [],
+      groups: [],
+      postings: [],
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function loadStore(): EasieStore {
@@ -47,8 +111,15 @@ export function loadStore(): EasieStore {
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultStore();
-    return normalize(JSON.parse(raw) as Partial<EasieStore>);
+    if (raw) return normalize(JSON.parse(raw) as Partial<EasieStore>);
+
+    const fromV1 = migrateFromV1();
+    if (fromV1) {
+      const migrated = normalize(fromV1);
+      saveStore(migrated);
+      return migrated;
+    }
+    return defaultStore();
   } catch {
     return defaultStore();
   }
@@ -86,13 +157,20 @@ export function replaceStore(next: EasieStore): void {
   emit();
 }
 
+/** Replace in-memory + local copy without treating as "local edit" source of truth for cloud. */
+export function hydrateStore(next: EasieStore): void {
+  memoryCache = normalize(next);
+  saveStore(memoryCache);
+  emit();
+}
+
 export function getDefaultTemplate(templates: TextTemplate[]): TextTemplate {
   return templates.find((t) => t.isDefault) ?? templates[0] ?? createDefaultTemplate();
 }
 
 export function upsertLastProduct(
   store: EasieStore,
-  product: Product,
+  product: ProductDraft,
 ): EasieStore {
   return { ...store, lastProduct: product };
 }
@@ -102,4 +180,15 @@ export function setVariations(
   variations: TextVariation[],
 ): EasieStore {
   return { ...store, variations };
+}
+
+export function exportMigratePayload(store: EasieStore) {
+  return {
+    products: store.products,
+    templates: store.templates,
+    groups: store.groups,
+    postings: store.postings,
+    lastProduct: store.lastProduct,
+    settings: store.settings,
+  };
 }

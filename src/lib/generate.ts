@@ -1,6 +1,6 @@
-import type { Product, TextVariation } from "./types";
+import type { ProductDraft, TextVariation } from "./types";
 import { formatPriceBRL } from "./format";
-import { createId } from "./templates";
+import { createId } from "./ids";
 
 type Vars = {
   nome: string;
@@ -10,7 +10,7 @@ type Vars = {
   entrega: string;
 };
 
-function productVars(product: Product): Vars {
+function productVars(product: ProductDraft): Vars {
   return {
     nome: product.name.trim(),
     preco: formatPriceBRL(product.price),
@@ -45,7 +45,7 @@ function shippingLine(vars: Vars, style: "dot" | "pipe" | "lines"): string {
  * Always keeps nome, preço and link (RN06); varies emoji, order and CTA.
  */
 export function generateVariations(
-  product: Product,
+  product: ProductDraft,
   baseTemplate: string,
   count = 4,
 ): TextVariation[] {

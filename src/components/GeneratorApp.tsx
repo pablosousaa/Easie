@@ -1,12 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { useSyncExternalStore } from "react";
+import { ListOrdered } from "lucide-react";
 import { ProductForm } from "./ProductForm";
 import { VariationCard } from "./VariationCard";
 import { useToast } from "./ToastProvider";
-import type { Product, TextVariation } from "@/lib/types";
+import { useAuth } from "./AuthProvider";
+import type { Product, ProductDraft, TextVariation } from "@/lib/types";
 import { emptyProduct } from "@/lib/format";
 import { generateVariations } from "@/lib/generate";
+import { createId, nowIso } from "@/lib/ids";
+import { ensureChecklist } from "@/lib/checklist";
 import {
   getDefaultTemplate,
   getServerSnapshot,
@@ -19,30 +24,62 @@ import {
 
 export function GeneratorApp() {
   const { showToast } = useToast();
+  const { cloud, pushStore } = useAuth();
   const store = useSyncExternalStore(
     subscribeStore,
     getStoreSnapshot,
     getServerSnapshot,
   );
 
-  function handleGenerate(product: Product) {
+  async function persist(next: typeof store) {
+    replaceStore(next);
+    if (cloud) await pushStore(next);
+  }
+
+  async function handleGenerate(draft: ProductDraft) {
     const template = getDefaultTemplate(store.templates);
-    const variations = generateVariations(product, template.content, 4);
-    replaceStore(setVariations(upsertLastProduct(store, product), variations));
-    showToast("4 variações geradas. Edite e copie.");
+    const variations = generateVariations(draft, template.content, 4);
+
+    const product: Product = {
+      id: createId("prd"),
+      ...draft,
+      status: "queued",
+      queueOrder: store.products.length,
+      createdAt: nowIso(),
+      completedAt: null,
+    };
+
+    let next = setVariations(upsertLastProduct(store, draft), variations);
+    next = {
+      ...next,
+      products: [...next.products, product],
+    };
+    next = ensureChecklist(next, product, variations);
+    next = {
+      ...next,
+      products: next.products.map((p) =>
+        p.id === product.id ? { ...p, status: "active" as const } : p,
+      ),
+    };
+
+    await persist(next);
+    showToast("Textos gerados. Produto na fila — abra o checklist.");
     requestAnimationFrame(() => {
       document.getElementById("variacoes")?.scrollIntoView({ behavior: "smooth" });
     });
   }
 
-  function handleVariationChange(id: string, text: string) {
+  async function handleVariationChange(id: string, text: string) {
     const variations: TextVariation[] = store.variations.map((v) =>
       v.id === id ? { ...v, text } : v,
     );
-    replaceStore(setVariations(store, variations));
+    await persist(setVariations(store, variations));
   }
 
   const initial = store.lastProduct ?? emptyProduct();
+  const latestActive = [...store.products]
+    .reverse()
+    .find((p) => p.status === "active" || p.status === "queued");
 
   return (
     <div className="page">
@@ -69,9 +106,20 @@ export function GeneratorApp() {
       </section>
 
       <section className="section" id="variacoes" aria-labelledby="variacoes-heading">
-        <h2 id="variacoes-heading" className="page-title" style={{ fontSize: "1.125rem" }}>
-          Textos gerados
-        </h2>
+        <div className="section-head">
+          <h2 id="variacoes-heading" className="page-title" style={{ fontSize: "1.125rem" }}>
+            Textos gerados
+          </h2>
+          {latestActive ? (
+            <Link
+              href={`/checklist/${latestActive.id}`}
+              className="btn btn-secondary btn-sm"
+            >
+              <ListOrdered size={16} aria-hidden />
+              Checklist
+            </Link>
+          ) : null}
+        </div>
         {store.variations.length === 0 ? (
           <div className="surface empty">
             Preencha o produto e toque em <strong>Gerar textos</strong> para ver 3 a 5

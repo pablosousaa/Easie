@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { TemplateEditor } from "./TemplateEditor";
+import { useAuth } from "./AuthProvider";
 import type { TextTemplate } from "@/lib/types";
 import {
   getServerSnapshot,
@@ -11,14 +12,17 @@ import {
 } from "@/lib/storage";
 
 export function TemplatesApp() {
+  const { cloud, pushStore } = useAuth();
   const store = useSyncExternalStore(
     subscribeStore,
     getStoreSnapshot,
     getServerSnapshot,
   );
 
-  function handleChange(templates: TextTemplate[]) {
-    replaceStore({ ...store, templates });
+  async function handleChange(templates: TextTemplate[]) {
+    const next = { ...store, templates };
+    replaceStore(next);
+    if (cloud) await pushStore(next);
   }
 
   return (
