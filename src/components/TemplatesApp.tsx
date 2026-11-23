@@ -30,9 +30,9 @@ export function TemplatesApp() {
       <header className="page-header">
         <h1 className="page-title">Modelos de texto</h1>
         <p className="page-sub">
-          Crie e edite modelos com {"{{nome}}"} / {"{{preco}}"} / {"{{link}}"}{" "}
-          (também [PRODUTO], [PREÇO], [LINK]). Em Gerar você escolhe qual modelo
-          usar. Categoria no produto ainda sugere o modelo correspondente.
+          Estes modelos viram as variações em Gerar (um card por modelo). Use{" "}
+          {"{{nome}}"} / {"{{preco}}"} / {"{{link}}"} ou [PRODUTO] / [PREÇO] /
+          [LINK]. Frete e entrega seguem os toggles do produto.
         </p>
       </header>
 

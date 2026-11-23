@@ -1,6 +1,7 @@
-import type { ProductDraft, TextVariation } from "./types";
+import type { ProductDraft, TextTemplate, TextVariation } from "./types";
 import { formatPriceBRL } from "./format";
 import { createId } from "./ids";
+import { AD_TEMPLATE_DEFS } from "./templates";
 
 type Vars = {
   nome: string;
@@ -35,13 +36,11 @@ export function applyTemplate(template: string, vars: Vars): string {
     .replaceAll("[FRETE]", vars.frete)
     .replaceAll("[ENTREGA]", vars.entrega);
 
-  // Drop orphan shipping markers only when that perk is off
   if (!vars.frete) out = out.replace(/\s*🚚\s*/g, " ");
   if (!vars.entrega) out = out.replace(/\s*📦\s*/g, " ");
 
   return out
     .replace(/\s·\s·+/g, " · ")
-    // Orphan middot left when frete/entrega were cleared
     .replace(/\s·\s*(?=⚠️|⏳|🔥|👇|🛒|🛍️|💥|😍|\n|$)/g, " ")
     .replace(/\s·\s(?=\n|$)/g, "")
     .replace(/^\s·\s/gm, "")
@@ -50,77 +49,24 @@ export function applyTemplate(template: string, vars: Vars): string {
     .trim();
 }
 
-function shippingLine(vars: Vars, style: "dot" | "pipe" | "lines"): string {
-  const parts = [vars.frete, vars.entrega].filter(Boolean);
-  if (parts.length === 0) return "";
-  if (style === "lines") return parts.map((p) => `✅ ${p}`).join("\n");
-  if (style === "pipe") return `✨ ${parts.join(" | ")}`;
-  return `🚚 ${parts.join(" · ")}`;
-}
-
 /**
- * Builds 3–5 post variations from the product + optional base template.
- * Always keeps nome, preço and link (RN06); varies emoji, order and CTA.
+ * Gerar variations = one filled card per ad modelo.
+ * Default: the five texts (Oferta imperdível … Preço absurdo).
+ * Pass saved Modelos to use/edit those instead (or in addition via store).
  */
 export function generateVariations(
   product: ProductDraft,
-  baseTemplate: string,
-  count = 4,
+  templates?: TextTemplate[],
 ): TextVariation[] {
   const vars = productVars(product);
-  const n = Math.min(5, Math.max(3, count));
+  const sources =
+    templates && templates.length > 0
+      ? templates.map((t) => ({ name: t.name, content: t.content }))
+      : AD_TEMPLATE_DEFS.map((d) => ({ name: d.name, content: d.content }));
 
-  const ctas = [
-    `Veja Aqui 👉 ${vars.link}`,
-    `Confira agora 👇\n${vars.link}`,
-    `Link da oferta 🔗 ${vars.link}`,
-    `Aproveita! 👉 ${vars.link}`,
-    `Clique e veja 👇\n${vars.link}`,
-  ];
-
-  const builders: Array<() => string> = [
-    () => applyTemplate(baseTemplate, vars),
-    () =>
-      [
-        `🔥 Oferta: ${vars.nome}`,
-        `💰 Só ${vars.preco}`,
-        shippingLine(vars, "dot"),
-        ctas[1],
-      ]
-        .filter(Boolean)
-        .join("\n"),
-    () =>
-      [
-        `✨ ${vars.nome}`,
-        shippingLine(vars, "pipe"),
-        `Por apenas ${vars.preco} 💸`,
-        ctas[2],
-      ]
-        .filter(Boolean)
-        .join("\n"),
-    () =>
-      [
-        `📦 ${vars.nome} no Mercado Livre`,
-        `💵 Preço: ${vars.preco}`,
-        shippingLine(vars, "lines"),
-        ctas[3],
-      ]
-        .filter(Boolean)
-        .join("\n"),
-    () =>
-      [
-        `${vars.nome}`,
-        `💰 ${vars.preco}`,
-        vars.frete ? `🚚 ${vars.frete}` : "",
-        vars.entrega ? `⚡ ${vars.entrega}` : "",
-        ctas[4],
-      ]
-        .filter(Boolean)
-        .join("\n"),
-  ];
-
-  return builders.slice(0, n).map((build) => ({
+  return sources.map((src) => ({
     id: createId("var"),
-    text: build(),
+    text: applyTemplate(src.content, vars),
+    label: src.name,
   }));
 }

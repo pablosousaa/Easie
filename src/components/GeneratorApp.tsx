@@ -22,11 +22,6 @@ import {
   subscribeStore,
   upsertLastProduct,
 } from "@/lib/storage";
-import {
-  findTemplateById,
-  pickTemplateForCategory,
-} from "@/lib/templates";
-
 export function GeneratorApp() {
   const { showToast } = useToast();
   const { cloud, pushStore } = useAuth();
@@ -43,13 +38,11 @@ export function GeneratorApp() {
     if (cloud) await pushStore(next);
   }
 
-  async function handleGenerate(draft: ProductDraft, templateId: string) {
+  async function handleGenerate(draft: ProductDraft) {
     setGenerating(true);
     try {
-      const template =
-        findTemplateById(store.templates, templateId) ??
-        pickTemplateForCategory(store.templates, draft.category);
-      const variations = generateVariations(draft, template.content, 4);
+      // Five ad texts (and any saved Modelos) become the variation cards
+      const variations = generateVariations(draft, store.templates);
 
       const product: Product = {
         id: createId("prd"),
@@ -103,7 +96,7 @@ export function GeneratorApp() {
       <header className="page-header">
         <h1 className="page-title">Gerar</h1>
         <p className="page-sub">
-          Cadastre o produto, escolha o modelo e gere variações
+          Cadastre o produto e gere as 5 variações de anúncio
         </p>
       </header>
 
@@ -114,7 +107,6 @@ export function GeneratorApp() {
         <ProductForm
           key={`${initial.name}|${initial.affiliateLink}|${initial.price}`}
           initial={initial}
-          templates={store.templates}
           onGenerate={handleGenerate}
           generating={generating}
         />
@@ -162,7 +154,7 @@ export function GeneratorApp() {
             </p>
             <p className="helper" style={{ marginTop: 8 }}>
               <Sparkles size={14} className="inline-icon" aria-hidden />{" "}
-              3 a 5 variações aparecem aqui
+              As 5 variações (Oferta imperdível, Achadinho… ) aparecem aqui
             </p>
           </EmptyState>
         ) : (
