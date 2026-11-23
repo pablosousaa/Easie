@@ -106,21 +106,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ) : null}
 
       <div className="saas-main">
-        <header className="saas-topbar">
-          <Link
-            href={user ? "/gerar" : "/"}
-            className="saas-logo saas-logo--compact"
-          >
-            Easie<span>.</span>
-          </Link>
-          <div className="saas-topbar__actions">
-            {user ? (
+        {showNav ? (
+          <header className="saas-topbar">
+            <Link href="/gerar" className="saas-logo saas-logo--compact">
+              Easie<span>.</span>
+            </Link>
+            <div className="saas-topbar__actions">
               <Link href="/conta" className="btn btn-ghost btn-sm">
-                {user.name.split(" ")[0]}
+                {user!.name.split(" ")[0]}
               </Link>
-            ) : null}
-          </div>
-        </header>
+            </div>
+          </header>
+        ) : null}
         <main className="saas-content">{children}</main>
       </div>
 
