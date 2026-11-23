@@ -11,13 +11,13 @@ import type {
   UserSettings,
 } from "./types";
 import { EMPTY_RESULTS, STORAGE_KEY, STORAGE_KEY_V1 } from "./types";
-import { createDefaultTemplate, createSeasonalTemplate } from "./templates";
+import { createAdTemplates, createDefaultTemplate } from "./templates";
 
 const listeners = new Set<() => void>();
 let memoryCache: EasieStore | null = null;
 
 function seedTemplates(): TextTemplate[] {
-  return [createDefaultTemplate(), createSeasonalTemplate()];
+  return createAdTemplates();
 }
 
 const SERVER_SNAPSHOT: EasieStore = {

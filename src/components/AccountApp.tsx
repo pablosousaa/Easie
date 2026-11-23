@@ -19,7 +19,7 @@ import {
   exportStoreToCsv,
   importStoreFromCsv,
 } from "@/lib/csv";
-import { createDefaultTemplate } from "@/lib/templates";
+import { createAdTemplates } from "@/lib/templates";
 import {
   clearPersistedStore,
   getServerSnapshot,
@@ -142,7 +142,7 @@ function AccountAppInner() {
     replaceStore({
       products: [],
       lastProduct: null,
-      templates: [createDefaultTemplate()],
+      templates: createAdTemplates(),
       variations: [],
       groups: [],
       postings: [],

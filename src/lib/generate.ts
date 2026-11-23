@@ -20,14 +20,32 @@ function productVars(product: ProductDraft): Vars {
   };
 }
 
-function applyTemplate(template: string, vars: Vars): string {
-  return template
+/** Apply {{nome}}/{{preco}}/… and bracket aliases [PRODUTO]/[PREÇO]/[LINK]. */
+export function applyTemplate(template: string, vars: Vars): string {
+  let out = template
     .replaceAll("{{nome}}", vars.nome)
     .replaceAll("{{preco}}", vars.preco)
     .replaceAll("{{link}}", vars.link)
     .replaceAll("{{frete}}", vars.frete)
     .replaceAll("{{entrega}}", vars.entrega)
+    .replaceAll("[PRODUTO]", vars.nome)
+    .replaceAll("[PREÇO]", vars.preco)
+    .replaceAll("[PRECO]", vars.preco)
+    .replaceAll("[LINK]", vars.link)
+    .replaceAll("[FRETE]", vars.frete)
+    .replaceAll("[ENTREGA]", vars.entrega);
+
+  // Drop orphan shipping markers only when that perk is off
+  if (!vars.frete) out = out.replace(/\s*🚚\s*/g, " ");
+  if (!vars.entrega) out = out.replace(/\s*📦\s*/g, " ");
+
+  return out
+    .replace(/\s·\s·+/g, " · ")
+    // Orphan middot left when frete/entrega were cleared
+    .replace(/\s·\s*(?=⚠️|⏳|🔥|👇|🛒|🛍️|💥|😍|\n|$)/g, " ")
     .replace(/\s·\s(?=\n|$)/g, "")
+    .replace(/^\s·\s/gm, "")
+    .replace(/[ \t]{2,}/g, " ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
