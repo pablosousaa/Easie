@@ -10,7 +10,8 @@ type Errors = Partial<Record<"affiliateLink" | "name" | "price", string>>;
 
 type Props = {
   initial: ProductDraft;
-  onGenerate: (product: ProductDraft) => void;
+  onGenerate: (product: ProductDraft) => void | Promise<void>;
+  generating?: boolean;
 };
 
 function validate(product: ProductDraft): Errors {
@@ -32,7 +33,7 @@ function validate(product: ProductDraft): Errors {
   return errors;
 }
 
-export function ProductForm({ initial, onGenerate }: Props) {
+export function ProductForm({ initial, onGenerate, generating = false }: Props) {
   const { showToast } = useToast();
   const [product, setProduct] = useState<ProductDraft>({
     ...initial,
@@ -40,6 +41,7 @@ export function ProductForm({ initial, onGenerate }: Props) {
   });
   const [errors, setErrors] = useState<Errors>({});
   const [lookingUp, setLookingUp] = useState(false);
+  const busy = lookingUp || generating;
 
   function update<K extends keyof ProductDraft>(key: K, value: ProductDraft[K]) {
     setProduct((prev) => ({ ...prev, [key]: value }));
@@ -102,7 +104,7 @@ export function ProductForm({ initial, onGenerate }: Props) {
     const nextErrors = validate(product);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
-    onGenerate(product);
+    void onGenerate(product);
   }
 
   return (
@@ -132,15 +134,14 @@ export function ProductForm({ initial, onGenerate }: Props) {
           </p>
         ) : (
           <p id="hint-autofill" className="helper">
-            Cole o link e toque em preencher para tentar nome e preço (RF05).
+            Cole o link e toque em preencher para tentar nome e preço
           </p>
         )}
         <button
           type="button"
-          className="btn btn-secondary btn-sm"
-          style={{ marginTop: 8 }}
+          className="btn btn-secondary btn-sm field-action"
           onClick={() => void handleAutofill()}
-          disabled={lookingUp}
+          disabled={busy}
         >
           {lookingUp ? (
             <Loader2 size={16} strokeWidth={1.5} className="spin" aria-hidden />
@@ -217,7 +218,7 @@ export function ProductForm({ initial, onGenerate }: Props) {
             </option>
           ))}
         </select>
-        <p className="helper">Usada para escolher o modelo de texto (RF12).</p>
+        <p className="helper">Escolhe o modelo de texto por categoria</p>
       </div>
 
       <div className="toggle-row" role="group" aria-label="Benefícios do produto">
@@ -242,9 +243,18 @@ export function ProductForm({ initial, onGenerate }: Props) {
       </div>
 
       <div className="actions">
-        <button type="submit" className="btn btn-primary btn-block">
-          <Sparkles size={18} strokeWidth={2} aria-hidden />
-          Gerar textos
+        <button
+          type="submit"
+          className="btn btn-primary btn-block"
+          disabled={busy}
+          aria-busy={generating}
+        >
+          {generating ? (
+            <Loader2 size={18} strokeWidth={1.5} className="spin" aria-hidden />
+          ) : (
+            <Sparkles size={18} strokeWidth={2} aria-hidden />
+          )}
+          {generating ? "Gerando…" : "Gerar textos"}
         </button>
       </div>
     </form>

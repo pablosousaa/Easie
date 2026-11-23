@@ -62,11 +62,19 @@ export function ReportsApp() {
       </header>
 
       <section className="section" aria-labelledby="stats-heading">
-        <h2 id="stats-heading" className="page-title" style={{ fontSize: "1.125rem" }}>
+        <h2 id="stats-heading" className="section-title">
           Postagens
         </h2>
         {!now ? (
-          <div className="surface empty">Carregando…</div>
+          <div className="surface stack-gap" aria-busy="true">
+            <div className="skeleton skeleton--line" style={{ width: "30%" }} />
+            <div className="stat-grid">
+              <div className="skeleton skeleton--btn" />
+              <div className="skeleton skeleton--btn" />
+              <div className="skeleton skeleton--btn" />
+            </div>
+            <span className="sr-only">Carregando estatísticas</span>
+          </div>
         ) : (
           <>
             <div className="stat-grid">
@@ -109,7 +117,7 @@ export function ReportsApp() {
 
       <section className="section" aria-labelledby="results-heading">
         <div className="section-head">
-          <h2 id="results-heading" className="page-title" style={{ fontSize: "1.125rem" }}>
+          <h2 id="results-heading" className="section-title">
             Resultados manuais
           </h2>
           <p className="helper" style={{ margin: 0 }}>
@@ -118,8 +126,11 @@ export function ReportsApp() {
         </div>
 
         {tracked.length === 0 ? (
-          <div className="surface empty">
-            Nenhum produto ainda. Gere um em <Link href="/gerar">Gerar</Link>.
+          <div className="surface empty-state">
+            <p className="empty-state__title">Nenhum resultado ainda</p>
+            <p className="helper">
+              Gere um produto em <Link href="/gerar">Gerar</Link>
+            </p>
           </div>
         ) : (
           <ul className="entity-list">

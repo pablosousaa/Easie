@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Copy, ExternalLink, SkipForward } from "lucide-react";
+import {
+  Check,
+  Copy,
+  ExternalLink,
+  SkipForward,
+  Users,
+} from "lucide-react";
 import { useAuth } from "./AuthProvider";
+import { EmptyState } from "./EmptyState";
 import { useToast } from "./ToastProvider";
 import {
   ensureChecklist,
@@ -34,6 +41,7 @@ export function ChecklistApp({ productId }: Props) {
     getStoreSnapshot,
     getServerSnapshot,
   );
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const product = store.products.find((p) => p.id === productId);
 
@@ -67,9 +75,16 @@ export function ChecklistApp({ productId }: Props) {
   if (!product) {
     return (
       <div className="page">
-        <div className="surface empty">
-          Produto não encontrado. Volte para a <Link href="/fila">fila</Link>.
-        </div>
+        <EmptyState
+          title="Produto não encontrado"
+          action={
+            <Link href="/fila" className="btn btn-secondary">
+              Voltar à fila
+            </Link>
+          }
+        >
+          <p className="helper">Ele pode ter sido concluído ou removido.</p>
+        </EmptyState>
       </div>
     );
   }
@@ -85,10 +100,21 @@ export function ChecklistApp({ productId }: Props) {
   async function copyText(text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      showToast("Texto copiado.");
+      showToast("Texto copiado");
+      return true;
     } catch {
-      showToast("Não foi possível copiar.", "error");
+      showToast("Não foi possível copiar", "error");
+      return false;
     }
+  }
+
+  /** One tap: copy variation, then open the Facebook group. */
+  async function copyAndOpen(text: string, link: string, postingId: string) {
+    setBusyId(postingId);
+    const ok = await copyText(text);
+    setBusyId(null);
+    if (!ok) return;
+    window.open(link, "_blank", "noopener,noreferrer");
   }
 
   async function setStatus(postingId: string, status: "posted" | "ignored") {
@@ -115,25 +141,25 @@ export function ChecklistApp({ productId }: Props) {
     let next = markPostingStatus(prepared, postingId, status);
     next = maybeCompleteProduct(next, current.id);
     await persist(next);
-    if (status === "posted") showToast("Marcado como postado.");
-    if (status === "ignored") showToast("Grupo ignorado.");
+    if (status === "posted") showToast("Marcado como postado");
+    if (status === "ignored") showToast("Grupo ignorado");
 
     const updated = next.products.find((p) => p.id === current.id);
     if (updated?.status === "done") {
-      showToast("Produto concluído — foi para o histórico.");
+      showToast("Produto concluído — foi para o histórico");
       router.push("/historico");
     }
   }
 
   return (
-    <div className="page">
+    <div className="page page--checklist">
       <header className="page-header">
+        <p className="page-eyebrow">Checklist</p>
         <h1 className="page-title">{product.name}</h1>
         <p className="page-sub">
-          Abra o grupo, copie o texto sugerido e marque postado. Sem automação — envio
-          manual.
+          Copie e abra o grupo, cole no Facebook, marque postado
         </p>
-        <div className="progress-panel">
+        <div className="progress-panel progress-panel--sticky">
           <div className="progress-bar" aria-hidden>
             <div
               className="progress-bar__fill"
@@ -146,17 +172,26 @@ export function ChecklistApp({ productId }: Props) {
             />
           </div>
           <p className="helper" role="status">
-            {progress.done} de {progress.total} grupos concluídos
+            {progress.done} de {progress.total} grupos
           </p>
         </div>
       </header>
 
       <section className="section">
         {active.length === 0 ? (
-          <div className="surface empty">
-            Cadastre grupos ativos em <Link href="/grupos">Grupos</Link> para montar o
-            checklist.
-          </div>
+          <EmptyState
+            title="Nenhum grupo ativo"
+            action={
+              <Link href="/grupos" className="btn btn-primary">
+                <Users size={18} aria-hidden />
+                Cadastrar grupos
+              </Link>
+            }
+          >
+            <p className="helper">
+              Ative grupos em Grupos para montar este checklist
+            </p>
+          </EmptyState>
         ) : (
           <ul className="entity-list">
             {active.map((group) => {
@@ -174,9 +209,14 @@ export function ChecklistApp({ productId }: Props) {
                   : posting.status === "ignored"
                     ? "Ignorado"
                     : "Pendente";
+              const done =
+                posting.status === "posted" || posting.status === "ignored";
 
               return (
-                <li key={group.id} className="checklist-card">
+                <li
+                  key={group.id}
+                  className={`checklist-card${done ? " checklist-card--done" : ""}`}
+                >
                   <div className="checklist-card__head">
                     <div>
                       <h3 className="entity-card__title">{group.name}</h3>
@@ -201,68 +241,96 @@ export function ChecklistApp({ productId }: Props) {
                     </p>
                   ) : null}
 
-                  <label className="label" htmlFor={`var-${posting.id}`}>
-                    Texto sugerido (variação {(posting.variationIndex % 5) + 1})
-                  </label>
-                  <textarea
-                    id={`var-${posting.id}`}
-                    className="textarea"
-                    rows={5}
-                    value={posting.variationText}
-                    onChange={(e) => {
-                      const text = e.target.value;
-                      const next = {
-                        ...prepared,
-                        postings: prepared.postings.map((p) =>
-                          p.id === posting.id ? { ...p, variationText: text } : p,
-                        ),
-                      };
-                      void persist(next);
-                    }}
-                  />
-
-                  {posting.postedAt ? (
+                  {!done ? (
+                    <>
+                      <label className="label" htmlFor={`var-${posting.id}`}>
+                        Texto sugerido (variação {(posting.variationIndex % 5) + 1})
+                      </label>
+                      <textarea
+                        id={`var-${posting.id}`}
+                        className="textarea textarea--compact"
+                        rows={4}
+                        value={posting.variationText}
+                        onChange={(e) => {
+                          const text = e.target.value;
+                          const next = {
+                            ...prepared,
+                            postings: prepared.postings.map((p) =>
+                              p.id === posting.id
+                                ? { ...p, variationText: text }
+                                : p,
+                            ),
+                          };
+                          void persist(next);
+                        }}
+                      />
+                    </>
+                  ) : posting.postedAt ? (
                     <p className="helper">
                       Postado em {formatDateTimePt(posting.postedAt)}
                     </p>
                   ) : null}
 
                   <div className="checklist-actions">
-                    <a
-                      className="btn btn-secondary btn-sm"
-                      href={group.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <ExternalLink size={16} aria-hidden />
-                      Abrir grupo
-                    </a>
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => void copyText(posting.variationText)}
-                    >
-                      <Copy size={16} aria-hidden />
-                      Copiar
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-sm"
-                      onClick={() => void setStatus(posting.id, "posted")}
-                      disabled={posting.status === "posted"}
-                    >
-                      <Check size={16} aria-hidden />
-                      Postado
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => void setStatus(posting.id, "ignored")}
-                      disabled={posting.status === "ignored"}
-                    >
-                      <SkipForward size={16} aria-hidden />
-                      Ignorar
-                    </button>
+                    {!done ? (
+                      <button
+                        type="button"
+                        className="btn btn-primary checklist-actions__primary"
+                        disabled={busyId === posting.id}
+                        aria-busy={busyId === posting.id}
+                        onClick={() =>
+                          void copyAndOpen(
+                            posting.variationText,
+                            group.link,
+                            posting.id,
+                          )
+                        }
+                      >
+                        <ExternalLink size={16} aria-hidden />
+                        Copiar e abrir
+                      </button>
+                    ) : (
+                      <a
+                        className="btn btn-secondary checklist-actions__primary"
+                        href={group.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink size={16} aria-hidden />
+                        Abrir grupo
+                      </a>
+                    )}
+
+                    <div className="checklist-actions__row">
+                      {!done ? (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => void copyText(posting.variationText)}
+                        >
+                          <Copy size={16} aria-hidden />
+                          Copiar
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => void setStatus(posting.id, "posted")}
+                        disabled={posting.status === "posted"}
+                      >
+                        <Check size={16} aria-hidden />
+                        Postado
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => void setStatus(posting.id, "ignored")}
+                        disabled={posting.status === "ignored"}
+                      >
+                        <SkipForward size={16} aria-hidden />
+                        Ignorar
+                      </button>
+                    </div>
                   </div>
                 </li>
               );

@@ -38,9 +38,11 @@ export function HistoryApp() {
 
       <section className="section">
         {done.length === 0 ? (
-          <div className="surface empty">
-            Ainda não há produtos concluídos. Finalize um checklist na{" "}
-            <Link href="/fila">fila</Link>.
+          <div className="surface empty-state">
+            <p className="empty-state__title">Nada no histórico</p>
+            <p className="helper">
+              Finalize um checklist na <Link href="/fila">fila</Link>
+            </p>
           </div>
         ) : (
           <ul className="entity-list">

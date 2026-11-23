@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   BarChart3,
   Download,
+  Loader2,
   LogIn,
   LogOut,
   Trash2,
@@ -68,7 +69,7 @@ export function AccountApp() {
       setError(err);
       return;
     }
-    showToast(mode === "login" ? "Login ok. Dados na nuvem." : "Conta criada.");
+    showToast(mode === "login" ? "Login ok — dados na nuvem" : "Conta criada");
   }
 
   async function saveWindow() {
@@ -79,19 +80,19 @@ export function AccountApp() {
     };
     replaceStore(next);
     if (cloud) await pushStore(next);
-    showToast("Janela de re-post salva.");
+    showToast("Janela de re-post salva");
   }
 
   async function handleLogout() {
     await logout();
-    showToast("Sessão encerrada. Dados locais continuam neste aparelho.");
+    showToast("Sessão encerrada — dados locais continuam neste aparelho");
   }
 
   function handleExport() {
     const csv = exportStoreToCsv(store);
     const stamp = new Date().toISOString().slice(0, 10);
     downloadTextFile(`easie-backup-${stamp}.csv`, csv, "text/csv;charset=utf-8");
-    showToast("Backup CSV baixado.");
+    showToast("Backup CSV baixado");
   }
 
   async function handleImportFile(file: File) {
@@ -107,7 +108,7 @@ export function AccountApp() {
     if (!ok) return;
     hydrateStore(result.store);
     if (cloud) await pushStore(result.store);
-    showToast("Backup importado.");
+    showToast("Backup importado");
   }
 
   async function handleDeleteAccount() {
@@ -115,9 +116,9 @@ export function AccountApp() {
       "Excluir permanentemente sua conta e todos os dados na nuvem? Esta ação não pode ser desfeita.",
     );
     if (!ok) return;
-    const typed = window.prompt('Digite EXCLUIR para confirmar:');
+    const typed = window.prompt("Digite EXCLUIR para confirmar:");
     if (typed !== "EXCLUIR") {
-      showToast("Exclusão cancelada.", "error");
+      showToast("Exclusão cancelada", "error");
       return;
     }
     setBusy(true);
@@ -138,7 +139,7 @@ export function AccountApp() {
       trendingTakenIds: [],
       trendingHiddenIds: [],
     });
-    showToast("Conta e dados na nuvem excluídos.");
+    showToast("Conta e dados na nuvem excluídos");
   }
 
   return (
@@ -146,13 +147,21 @@ export function AccountApp() {
       <header className="page-header">
         <h1 className="page-title">Conta</h1>
         <p className="page-sub">
-          Ambiente individual: seus produtos, grupos e histórico ficam só na sua conta.
+          Sessão, backup e preferências deste aparelho
         </p>
       </header>
 
-      <section className="section">
+      <section className="section" aria-labelledby="session-heading">
+        <h2 id="session-heading" className="section-title">
+          Sessão
+        </h2>
         {loading ? (
-          <div className="surface empty">Carregando sessão…</div>
+          <div className="surface stack-gap" aria-busy="true" aria-live="polite">
+            <div className="skeleton skeleton--line" style={{ width: "40%" }} />
+            <div className="skeleton skeleton--line" style={{ width: "70%" }} />
+            <div className="skeleton skeleton--btn" />
+            <span className="sr-only">Carregando sessão</span>
+          </div>
         ) : user ? (
           <div className="surface stack-gap">
             <p className="helper" style={{ margin: 0 }}>
@@ -163,8 +172,8 @@ export function AccountApp() {
             </p>
             <p className="helper">{user.email}</p>
             {authMode === "dev" ? (
-              <p className="warn-banner">
-                AUTH_SECRET não definido — usando segredo de desenvolvimento. Defina
+              <p className="warn-banner" role="status">
+                AUTH_SECRET não definido — segredo de desenvolvimento. Defina
                 AUTH_SECRET em produção.
               </p>
             ) : null}
@@ -185,7 +194,10 @@ export function AccountApp() {
                 role="tab"
                 aria-selected={mode === "login"}
                 className={mode === "login" ? "is-active" : undefined}
-                onClick={() => setMode("login")}
+                onClick={() => {
+                  setMode("login");
+                  setError(null);
+                }}
               >
                 Entrar
               </button>
@@ -194,13 +206,16 @@ export function AccountApp() {
                 role="tab"
                 aria-selected={mode === "signup"}
                 className={mode === "signup" ? "is-active" : undefined}
-                onClick={() => setMode("signup")}
+                onClick={() => {
+                  setMode("signup");
+                  setError(null);
+                }}
               >
                 Criar conta
               </button>
             </div>
 
-            <form className="stack-gap" style={{ marginTop: 16 }} onSubmit={handleAuth}>
+            <form className="stack-gap auth-form" onSubmit={handleAuth}>
               {mode === "signup" ? (
                 <div className="field">
                   <label className="label" htmlFor="acc-name">
@@ -213,6 +228,8 @@ export function AccountApp() {
                     onChange={(e) => setName(e.target.value)}
                     required
                     minLength={2}
+                    disabled={busy}
+                    autoComplete="name"
                   />
                 </div>
               ) : null}
@@ -228,6 +245,7 @@ export function AccountApp() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={busy}
                 />
               </div>
               <div className="field">
@@ -236,13 +254,16 @@ export function AccountApp() {
                 </label>
                 <input
                   id="acc-password"
-                  className="input"
+                  className={`input${error ? " input--error" : ""}`}
                   type="password"
                   autoComplete={mode === "login" ? "current-password" : "new-password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
+                  disabled={busy}
+                  aria-invalid={Boolean(error)}
+                  aria-describedby={error ? "acc-error" : "acc-hint"}
                 />
               </div>
               {mode === "signup" ? (
@@ -251,51 +272,62 @@ export function AccountApp() {
                     type="checkbox"
                     checked={migrateLocal}
                     onChange={(e) => setMigrateLocal(e.target.checked)}
+                    disabled={busy}
                   />
                   <span className="toggle-control" aria-hidden />
                   <span className="toggle-text">
-                    Trazer dados deste aparelho (localStorage) para a conta
+                    Trazer dados deste aparelho para a conta
                   </span>
                 </label>
               ) : null}
-              {error ? <p className="field__error">{error}</p> : null}
+              {error ? (
+                <p id="acc-error" className="field__error" role="alert">
+                  {error}
+                </p>
+              ) : (
+                <p id="acc-hint" className="helper">
+                  Sem conta o app funciona no navegador. Com conta, os dados ficam
+                  na nuvem.
+                </p>
+              )}
               <button
                 type="submit"
                 className="btn btn-primary btn-block"
                 disabled={busy}
+                aria-busy={busy}
               >
-                {mode === "login" ? (
-                  <>
-                    <LogIn size={18} aria-hidden />
-                    Entrar
-                  </>
+                {busy ? (
+                  <Loader2 size={18} className="spin" aria-hidden />
+                ) : mode === "login" ? (
+                  <LogIn size={18} aria-hidden />
                 ) : (
-                  <>
-                    <UserPlus size={18} aria-hidden />
-                    Criar conta
-                  </>
+                  <UserPlus size={18} aria-hidden />
                 )}
+                {busy
+                  ? "Aguarde…"
+                  : mode === "login"
+                    ? "Entrar"
+                    : "Criar conta"}
               </button>
-              <p className="helper">
-                Sem conta, o app continua no navegador. Com conta, os dados ficam na
-                nuvem (SQLite no servidor).
-              </p>
             </form>
           </div>
         )}
       </section>
 
       <section className="section" aria-labelledby="backup-heading">
-        <h2 id="backup-heading" className="page-title" style={{ fontSize: "1.125rem" }}>
+        <h2 id="backup-heading" className="section-title">
           Backup CSV
         </h2>
         <div className="surface stack-gap">
           <p className="helper" style={{ margin: 0 }}>
-            Exporte tudo (produtos, grupos, modelos, postagens e resultados) para
-            trocar de aparelho ou guardar uma cópia. Importe o mesmo arquivo para
+            Exporte para trocar de aparelho. Importe o mesmo arquivo para
             restaurar.
           </p>
-          <button type="button" className="btn btn-secondary btn-block" onClick={handleExport}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-block"
+            onClick={handleExport}
+          >
             <Download size={18} aria-hidden />
             Exportar CSV
           </button>
@@ -322,13 +354,13 @@ export function AccountApp() {
       </section>
 
       <section className="section" aria-labelledby="settings-heading">
-        <h2 id="settings-heading" className="page-title" style={{ fontSize: "1.125rem" }}>
+        <h2 id="settings-heading" className="section-title">
           Re-post
         </h2>
         <div className="surface">
           <div className="field">
             <label className="label" htmlFor="repost-days">
-              Janela mínima entre posts do mesmo produto no mesmo grupo (dias)
+              Dias mínimos entre o mesmo produto no mesmo grupo
             </label>
             <input
               id="repost-days"
@@ -369,13 +401,13 @@ export function AccountApp() {
 
       {user ? (
         <section className="section" aria-labelledby="danger-heading">
-          <h2 id="danger-heading" className="page-title" style={{ fontSize: "1.125rem" }}>
+          <h2 id="danger-heading" className="section-title">
             Zona de risco
           </h2>
           <div className="surface stack-gap">
             <p className="helper" style={{ margin: 0 }}>
-              Apaga a conta na nuvem e todos os dados associados. Exporte um CSV antes,
-              se quiser guardar.
+              Apaga a conta na nuvem e todos os dados. Exporte um CSV antes se
+              quiser guardar.
             </p>
             <button
               type="button"

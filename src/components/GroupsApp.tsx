@@ -182,7 +182,7 @@ export function GroupsApp() {
 
       <section className="section" aria-labelledby="import-grupos">
         <div className="section-head">
-          <h2 id="import-grupos" className="page-title" style={{ fontSize: "1.125rem" }}>
+          <h2 id="import-grupos" className="section-title">
             Importar lista
           </h2>
           <button
@@ -241,7 +241,7 @@ export function GroupsApp() {
       </section>
 
       <section className="section" aria-labelledby="form-grupo">
-        <h2 id="form-grupo" className="page-title" style={{ fontSize: "1.125rem" }}>
+        <h2 id="form-grupo" className="section-title">
           {editingId ? "Editar grupo" : "Novo grupo"}
         </h2>
         <form className="surface" onSubmit={handleSubmit} noValidate>
@@ -317,12 +317,13 @@ export function GroupsApp() {
       </section>
 
       <section className="section" aria-labelledby="lista-grupos">
-        <h2 id="lista-grupos" className="page-title" style={{ fontSize: "1.125rem" }}>
+        <h2 id="lista-grupos" className="section-title">
           Seus grupos ({store.groups.length})
         </h2>
         {store.groups.length === 0 ? (
-          <div className="surface empty">
-            Nenhum grupo ainda. Cadastre o primeiro para montar o checklist de divulgação.
+          <div className="surface empty-state">
+            <p className="empty-state__title">Nenhum grupo ainda</p>
+            <p className="helper">Cadastre o primeiro acima para montar o checklist</p>
           </div>
         ) : (
           <ul className="entity-list">

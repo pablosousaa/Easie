@@ -19,10 +19,10 @@ export function VariationCard({ index, variation, onChange }: Props) {
     try {
       await navigator.clipboard.writeText(variation.text);
       setCopied(true);
-      showToast("Texto copiado!");
+      showToast("Texto copiado");
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
-      showToast("Não foi possível copiar. Selecione o texto e copie manualmente.", "error");
+      showToast("Não foi possível copiar — selecione o texto e copie manualmente", "error");
     }
   }
 
