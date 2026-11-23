@@ -143,6 +143,22 @@ export function loadUserStore(userId: string): EasieStore {
       ? templateRows.map(mapTemplate)
       : [createDefaultTemplate()];
 
+  const prefs = db
+    .prepare("SELECT taken_ids, hidden_ids FROM user_trending_prefs WHERE user_id = ?")
+    .get(userId) as { taken_ids: string; hidden_ids: string } | undefined;
+
+  function parseIds(raw: string | undefined): string[] {
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      return Array.isArray(parsed)
+        ? parsed.filter((x): x is string => typeof x === "string")
+        : [];
+    } catch {
+      return [];
+    }
+  }
+
   return {
     products: productRows.map(mapProduct),
     lastProduct: null,
@@ -153,6 +169,8 @@ export function loadUserStore(userId: string): EasieStore {
     settings: {
       repostWindowDays: user?.repost_window_days ?? 7,
     },
+    trendingTakenIds: parseIds(prefs?.taken_ids),
+    trendingHiddenIds: parseIds(prefs?.hidden_ids),
   };
 }
 
@@ -304,6 +322,18 @@ export function replaceUserStore(userId: string, store: EasieStore) {
   db.prepare("UPDATE users SET repost_window_days = ? WHERE id = ?").run(
     Math.max(1, store.settings.repostWindowDays || 7),
     userId,
+  );
+
+  db.prepare(
+    `INSERT INTO user_trending_prefs (user_id, taken_ids, hidden_ids)
+     VALUES (?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       taken_ids = excluded.taken_ids,
+       hidden_ids = excluded.hidden_ids`,
+  ).run(
+    userId,
+    JSON.stringify(store.trendingTakenIds ?? []),
+    JSON.stringify(store.trendingHiddenIds ?? []),
   );
 
   db.prepare("DELETE FROM postings WHERE user_id = ?").run(userId);

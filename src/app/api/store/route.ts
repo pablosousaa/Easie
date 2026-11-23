@@ -13,6 +13,8 @@ const storeSchema = z.object({
   settings: z.object({
     repostWindowDays: z.number().int().positive(),
   }),
+  trendingTakenIds: z.array(z.string()).optional().default([]),
+  trendingHiddenIds: z.array(z.string()).optional().default([]),
 });
 
 export async function GET() {
@@ -50,6 +52,8 @@ export async function PUT(request: Request) {
     groups: parsed.data.groups,
     postings: parsed.data.postings,
     settings: parsed.data.settings,
+    trendingTakenIds: parsed.data.trendingTakenIds,
+    trendingHiddenIds: parsed.data.trendingHiddenIds,
   });
 
   return NextResponse.json({ store: loadUserStore(user.id) });

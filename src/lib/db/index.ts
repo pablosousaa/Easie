@@ -81,6 +81,43 @@ function ensureSchema(sqlite: DatabaseSync) {
     CREATE INDEX IF NOT EXISTS postings_user_idx ON postings(user_id);
     CREATE INDEX IF NOT EXISTS postings_product_idx ON postings(product_id);
     CREATE INDEX IF NOT EXISTS postings_group_idx ON postings(group_id);
+
+    CREATE TABLE IF NOT EXISTS trending_categories (
+      id TEXT PRIMARY KEY NOT NULL,
+      ml_category_id TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      enabled INTEGER NOT NULL DEFAULT 1,
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS trending_items (
+      id TEXT PRIMARY KEY NOT NULL,
+      ml_item_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      thumbnail TEXT NOT NULL DEFAULT '',
+      price REAL NOT NULL DEFAULT 0,
+      currency TEXT NOT NULL DEFAULT 'BRL',
+      category_id TEXT NOT NULL,
+      category_name TEXT NOT NULL DEFAULT '',
+      rank INTEGER NOT NULL DEFAULT 0,
+      permalink TEXT NOT NULL DEFAULT '',
+      free_shipping INTEGER NOT NULL DEFAULT 0,
+      week_key TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS trending_items_week_idx ON trending_items(week_key);
+    CREATE INDEX IF NOT EXISTS trending_items_cat_idx ON trending_items(category_id);
+
+    CREATE TABLE IF NOT EXISTS trending_meta (
+      key TEXT PRIMARY KEY NOT NULL,
+      value TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS user_trending_prefs (
+      user_id TEXT PRIMARY KEY NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      taken_ids TEXT NOT NULL DEFAULT '[]',
+      hidden_ids TEXT NOT NULL DEFAULT '[]'
+    );
   `);
 }
 

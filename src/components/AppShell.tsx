@@ -7,6 +7,7 @@ import {
   FileText,
   History,
   ListOrdered,
+  Package,
   Sparkles,
   UserRound,
   Users,
@@ -15,6 +16,7 @@ import { useAuth } from "./AuthProvider";
 
 const NAV = [
   { href: "/gerar", label: "Gerar", icon: Sparkles },
+  { href: "/pegar-produtos", label: "Pegar", icon: Package },
   { href: "/fila", label: "Fila", icon: ListOrdered },
   { href: "/grupos", label: "Grupos", icon: Users },
   { href: "/modelos", label: "Modelos", icon: FileText },
@@ -25,9 +27,9 @@ const NAV = [
 
 const MOBILE_TABS = [
   { href: "/gerar", label: "Gerar", icon: Sparkles },
-  { href: "/fila", label: "Fila", icon: ListOrdered },
+  { href: "/pegar-produtos", label: "Pegar", icon: Package },
   { href: "/grupos", label: "Grupos", icon: Users },
-  { href: "/relatorios", label: "Stats", icon: BarChart3 },
+  { href: "/fila", label: "Fila", icon: ListOrdered },
   { href: "/conta", label: "Conta", icon: UserRound },
 ] as const;
 

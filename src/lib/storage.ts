@@ -24,6 +24,8 @@ const SERVER_SNAPSHOT: EasieStore = {
   groups: [],
   postings: [],
   settings: { repostWindowDays: 7 },
+  trendingTakenIds: [],
+  trendingHiddenIds: [],
 };
 
 function defaultStore(): EasieStore {
@@ -35,6 +37,8 @@ function defaultStore(): EasieStore {
     groups: [],
     postings: [],
     settings: { repostWindowDays: 7 },
+    trendingTakenIds: [],
+    trendingHiddenIds: [],
   };
 }
 
@@ -90,6 +94,12 @@ function normalize(parsed: Partial<EasieStore>): EasieStore {
     groups: Array.isArray(parsed.groups) ? (parsed.groups as FacebookGroup[]) : [],
     postings: Array.isArray(parsed.postings) ? (parsed.postings as Posting[]) : [],
     settings,
+    trendingTakenIds: Array.isArray(parsed.trendingTakenIds)
+      ? (parsed.trendingTakenIds as string[])
+      : [],
+    trendingHiddenIds: Array.isArray(parsed.trendingHiddenIds)
+      ? (parsed.trendingHiddenIds as string[])
+      : [],
   };
 }
 
@@ -200,5 +210,7 @@ export function exportMigratePayload(store: EasieStore) {
     postings: store.postings,
     lastProduct: store.lastProduct,
     settings: store.settings,
+    trendingTakenIds: store.trendingTakenIds,
+    trendingHiddenIds: store.trendingHiddenIds,
   };
 }

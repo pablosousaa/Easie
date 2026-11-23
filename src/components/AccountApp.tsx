@@ -135,6 +135,8 @@ export function AccountApp() {
       groups: [],
       postings: [],
       settings: { repostWindowDays: 7 },
+      trendingTakenIds: [],
+      trendingHiddenIds: [],
     });
     showToast("Conta e dados na nuvem excluídos.");
   }
