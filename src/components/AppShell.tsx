@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import {
   BarChart3,
-  FileText,
   History,
   ListOrdered,
   Package,
@@ -20,7 +19,6 @@ const NAV = [
   { href: "/pegar-produtos", label: "Pegar", icon: Package },
   { href: "/fila", label: "Fila", icon: ListOrdered },
   { href: "/grupos", label: "Grupos", icon: Users },
-  { href: "/modelos", label: "Modelos", icon: FileText },
   { href: "/historico", label: "Histórico", icon: History },
   { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { href: "/conta", label: "Conta", icon: UserRound },
