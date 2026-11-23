@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { createSessionToken, setSessionCookie } from "@/lib/auth";
-import { getDb } from "@/lib/db";
-import { users } from "@/lib/db/schema";
 import { createId } from "@/lib/ids";
 import { hashPassword } from "@/lib/password";
-import { migrateLocalData, seedDefaultTemplate } from "@/lib/user-data";
+import {
+  findUserByEmail,
+  insertUser,
+  migrateLocalData,
+  seedDefaultTemplate,
+} from "@/lib/user-data";
 
 const bodySchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -43,8 +45,7 @@ export async function POST(request: Request) {
   }
 
   const email = parsed.data.email.toLowerCase();
-  const db = getDb();
-  const existing = db.select().from(users).where(eq(users.email, email)).get();
+  const existing = findUserByEmail(email);
   if (existing) {
     return NextResponse.json(
       { error: "Já existe uma conta com este e-mail." },
@@ -54,15 +55,16 @@ export async function POST(request: Request) {
 
   const id = createId("usr");
   const passwordHash = await hashPassword(parsed.data.password);
-  db.insert(users)
-    .values({
-      id,
-      name: parsed.data.name,
-      email,
-      passwordHash,
-      repostWindowDays: parsed.data.migrate?.settings?.repostWindowDays ?? 7,
-    })
-    .run();
+  const repostWindowDays =
+    parsed.data.migrate?.settings?.repostWindowDays ?? 7;
+
+  insertUser({
+    id,
+    name: parsed.data.name,
+    email,
+    passwordHash,
+    repostWindowDays,
+  });
 
   seedDefaultTemplate(id);
   if (parsed.data.migrate) {
@@ -86,7 +88,7 @@ export async function POST(request: Request) {
       id,
       name: parsed.data.name,
       email,
-      repostWindowDays: parsed.data.migrate?.settings?.repostWindowDays ?? 7,
+      repostWindowDays,
     },
   });
 }

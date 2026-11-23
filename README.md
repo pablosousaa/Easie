@@ -12,6 +12,10 @@ Sistema web para afiliados do Mercado Livre que divulgam produtos em grupos do F
 - Geração/cópia de textos da Fase 1 continua funcionando (também offline no navegador)
 - UI pt-BR, mobile-first
 
+## Requisitos
+
+- **Node.js 22.13+** (usa o módulo nativo `node:sqlite` — sem compilação C++ / Visual Studio Build Tools no Windows)
+
 ## Como rodar
 
 ```bash
@@ -34,7 +38,7 @@ O banco SQLite é criado automaticamente em `data/easie.db` (ou no caminho de `D
 
 Sem `AUTH_SECRET` o app sobe em modo desenvolvimento. Não use o fallback em produção.
 
-Hospedagem barata: qualquer VPS/Node com disco persistente (SQLite). Evite serverless sem volume — o arquivo do banco precisa persistir.
+Hospedagem barata: qualquer VPS/Node 22+ com disco persistente (SQLite). Evite serverless sem volume — o arquivo do banco precisa persistir.
 
 ## Scripts
 

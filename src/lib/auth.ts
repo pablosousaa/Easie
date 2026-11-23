@@ -1,8 +1,6 @@
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
-import { eq } from "drizzle-orm";
-import { getDb } from "./db";
-import { users } from "./db/schema";
+import { findUserById } from "./user-data";
 
 export const SESSION_COOKIE = "easie_session";
 
@@ -75,7 +73,6 @@ export async function getSession(): Promise<SessionPayload | null> {
 export async function requireUser() {
   const session = await getSession();
   if (!session) return null;
-  const db = getDb();
-  const user = db.select().from(users).where(eq(users.id, session.sub)).get();
+  const user = findUserById(session.sub);
   return user ?? null;
 }
