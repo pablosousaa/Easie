@@ -9,7 +9,7 @@ import type {
   UserSettings,
 } from "./types";
 import { EMPTY_RESULTS } from "./types";
-import { createDefaultTemplate } from "./templates";
+import { createDefaultTemplate, createSeasonalTemplate } from "./templates";
 
 const BACKUP_HEADER = "# easie-backup-v1";
 
@@ -278,7 +278,9 @@ export function importStoreFromCsv(raw: string): CsvImportResult {
   }
 
   const finalTemplates =
-    templates.length > 0 ? templates : [createDefaultTemplate()];
+    templates.length > 0
+      ? templates
+      : [createDefaultTemplate(), createSeasonalTemplate()];
   if (!finalTemplates.some((t) => t.isDefault)) {
     finalTemplates[0] = { ...finalTemplates[0], isDefault: true };
   }

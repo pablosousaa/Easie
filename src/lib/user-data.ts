@@ -6,7 +6,7 @@ import type {
   TemplateRow,
   UserRow,
 } from "./db/types";
-import { createDefaultTemplate } from "./templates";
+import { createDefaultTemplate, createSeasonalTemplate } from "./templates";
 import { createId, nowIso } from "./ids";
 import type {
   EasieStore,
@@ -112,11 +112,22 @@ export function seedDefaultTemplate(userId: string) {
     .prepare("SELECT id FROM templates WHERE user_id = ? LIMIT 1")
     .get(userId);
   if (existing) return;
-  const tpl = createDefaultTemplate(createId("tpl"));
-  db.prepare(
+  const insert = db.prepare(
     `INSERT INTO templates (id, user_id, name, content, is_default, updated_at, category)
-     VALUES (?, ?, ?, ?, 1, ?, ?)`,
-  ).run(tpl.id, userId, tpl.name, tpl.content, nowIso(), tpl.category ?? "");
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  );
+  const tpl = createDefaultTemplate(createId("tpl"));
+  insert.run(tpl.id, userId, tpl.name, tpl.content, 1, nowIso(), tpl.category ?? "");
+  const seasonal = createSeasonalTemplate(createId("tpl"));
+  insert.run(
+    seasonal.id,
+    userId,
+    seasonal.name,
+    seasonal.content,
+    0,
+    nowIso(),
+    seasonal.category ?? "",
+  );
 }
 
 export function loadUserStore(userId: string): EasieStore {
@@ -143,7 +154,7 @@ export function loadUserStore(userId: string): EasieStore {
   const mappedTemplates =
     templateRows.length > 0
       ? templateRows.map(mapTemplate)
-      : [createDefaultTemplate()];
+      : [createDefaultTemplate(), createSeasonalTemplate()];
 
   const prefs = db
     .prepare("SELECT taken_ids, hidden_ids FROM user_trending_prefs WHERE user_id = ?")

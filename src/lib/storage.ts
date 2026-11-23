@@ -11,15 +11,19 @@ import type {
   UserSettings,
 } from "./types";
 import { EMPTY_RESULTS, STORAGE_KEY, STORAGE_KEY_V1 } from "./types";
-import { createDefaultTemplate } from "./templates";
+import { createDefaultTemplate, createSeasonalTemplate } from "./templates";
 
 const listeners = new Set<() => void>();
 let memoryCache: EasieStore | null = null;
 
+function seedTemplates(): TextTemplate[] {
+  return [createDefaultTemplate(), createSeasonalTemplate()];
+}
+
 const SERVER_SNAPSHOT: EasieStore = {
   products: [],
   lastProduct: null,
-  templates: [createDefaultTemplate()],
+  templates: seedTemplates(),
   variations: [],
   groups: [],
   postings: [],
@@ -32,7 +36,7 @@ function defaultStore(): EasieStore {
   return {
     products: [],
     lastProduct: null,
-    templates: [createDefaultTemplate()],
+    templates: seedTemplates(),
     variations: [],
     groups: [],
     postings: [],
@@ -62,7 +66,7 @@ function normalize(parsed: Partial<EasieStore>): EasieStore {
   const templates =
     parsed.templates && parsed.templates.length > 0
       ? parsed.templates
-      : [createDefaultTemplate()];
+      : seedTemplates();
 
   if (!templates.some((t) => t.isDefault)) {
     templates[0] = { ...templates[0], isDefault: true };
