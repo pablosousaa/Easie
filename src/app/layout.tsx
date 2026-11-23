@@ -1,20 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Barlow_Condensed, Cormorant_Garamond, Space_Mono } from "next/font/google";
+import { Cormorant_Garamond, Instrument_Sans, Space_Mono } from "next/font/google";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ToastProvider } from "@/components/ToastProvider";
 import "./globals.css";
 
-const barlowCondensed = Barlow_Condensed({
-  variable: "--font-barlow-condensed",
+const instrumentSans = Instrument_Sans({
+  variable: "--font-instrument",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
+  weight: ["400", "500"],
   display: "swap",
 });
 
@@ -35,14 +35,14 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0a0a0a", /* paper (dark UI) */
+  themeColor: "#141415",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="pt-BR"
-      className={`${barlowCondensed.variable} ${cormorant.variable} ${spaceMono.variable} h-full antialiased`}
+      className={`${instrumentSans.variable} ${cormorant.variable} ${spaceMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">
         <ToastProvider>
