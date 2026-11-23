@@ -24,10 +24,7 @@ export function QueueApp() {
 
   return (
     <div className="page">
-      <header>
-        <p className="brand">
-          Easie<span>.</span>
-        </p>
+      <header className="page-header">
         <h1 className="page-title">Fila de produtos</h1>
         <p className="page-sub">
           Produtos prontos para divulgar. Abra o checklist e marque grupo a grupo.
@@ -47,8 +44,8 @@ export function QueueApp() {
 
         {queue.length === 0 ? (
           <div className="surface empty">
-            Nenhum produto na fila. Gere textos na aba <strong>Gerar</strong> para
-            adicionar.
+            Nenhum produto na fila. Gere textos em{" "}
+            <Link href="/gerar">Gerar</Link> para adicionar.
           </div>
         ) : (
           <ul className="entity-list">

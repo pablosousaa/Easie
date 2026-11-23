@@ -27,10 +27,7 @@ export function TemplatesApp() {
 
   return (
     <div className="page">
-      <header>
-        <p className="brand">
-          Easie<span>.</span>
-        </p>
+      <header className="page-header">
         <h1 className="page-title">Modelos de texto</h1>
         <p className="page-sub">
           Crie modelos com variáveis. O modelo marcado como padrão é usado ao gerar posts.

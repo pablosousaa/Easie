@@ -54,10 +54,7 @@ export function ReportsApp() {
 
   return (
     <div className="page">
-      <header>
-        <p className="brand">
-          Easie<span>.</span>
-        </p>
+      <header className="page-header">
         <h1 className="page-title">Relatórios</h1>
         <p className="page-sub">
           Posts por dia e semana, e resultados manuais (cliques, vendas, comissão).
@@ -122,7 +119,7 @@ export function ReportsApp() {
 
         {tracked.length === 0 ? (
           <div className="surface empty">
-            Nenhum produto ainda. Gere um em <Link href="/">Gerar</Link>.
+            Nenhum produto ainda. Gere um em <Link href="/gerar">Gerar</Link>.
           </div>
         ) : (
           <ul className="entity-list">

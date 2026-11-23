@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Suspense } from "react";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { AuthProvider } from "@/components/AuthProvider";
-import { BottomNav } from "@/components/BottomNav";
 import { ToastProvider } from "@/components/ToastProvider";
 import "./globals.css";
 
@@ -14,16 +12,16 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Easie — Divulgação de afiliados",
+  title: "Easie — Workspace de divulgação para afiliados",
   description:
-    "Monte textos, controle grupos do Facebook e acompanhe o checklist de divulgação do Mercado Livre.",
+    "Gere textos, controle grupos do Facebook e acompanhe o checklist de divulgação do Mercado Livre. Conta individual, backup e relatórios.",
   applicationName: "Easie",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0f766e",
+  themeColor: "#ea580c",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -31,14 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="pt-BR" className={`${plusJakarta.variable} h-full antialiased`}>
       <body className="min-h-full">
         <ToastProvider>
-          <AuthProvider>
-            <div className="app-shell">
-              {children}
-              <Suspense fallback={null}>
-                <BottomNav />
-              </Suspense>
-            </div>
-          </AuthProvider>
+          <AuthProvider>{children}</AuthProvider>
         </ToastProvider>
       </body>
     </html>

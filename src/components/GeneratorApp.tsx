@@ -85,10 +85,7 @@ export function GeneratorApp() {
 
   return (
     <div className="page">
-      <header>
-        <p className="brand">
-          Easie<span>.</span>
-        </p>
+      <header className="page-header">
         <h1 className="page-title">Gerador de posts</h1>
         <p className="page-sub">
           Cadastre o produto, gere variações e copie com um toque — pronto para colar no
