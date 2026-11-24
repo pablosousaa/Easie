@@ -1259,48 +1259,143 @@ a.btn {
   font-variant-numeric: tabular-nums;
 }
 
-.day-bars {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+/* ——— Relatórios: posts-per-day area chart (neon moment) ——— */
+.posts-chart-surface {
+  padding: 16px 12px 12px;
+  background: var(--paper-deep);
+  border-color: var(--hairline);
+}
+
+.posts-chart {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.day-bars li {
-  display: grid;
-  grid-template-columns: 48px 1fr 28px;
-  align-items: center;
-  gap: 8px;
+.posts-chart__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px;
 }
 
-.day-bars__label,
-.day-bars__count {
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-
-.day-bars__count {
-  text-align: right;
+.posts-chart__range {
+  margin: 0;
+  font-size: var(--text-sm);
   font-weight: 500;
   color: var(--ink);
 }
 
-.day-bars__track {
-  height: 8px;
-  border-radius: var(--radius-pill);
-  background: var(--bg-muted);
-  overflow: hidden;
+.posts-chart__meta {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
 }
 
-.day-bars__fill {
-  height: 100%;
-  border-radius: inherit;
-  background: var(--neon);
-  min-width: 0;
-  transition: width 180ms var(--ease);
+.posts-chart__canvas {
+  position: relative;
+  width: 100%;
+  min-height: 200px;
+}
+
+.posts-chart__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 640 / 220;
+  overflow: visible;
+}
+
+.posts-chart__baseline {
+  stroke: var(--hairline);
+  stroke-width: 1;
+}
+
+.posts-chart__line {
+  filter: none;
+}
+
+.posts-chart__dot {
+  fill: var(--paper-deep);
+  stroke: var(--neon);
+  stroke-width: 2;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease), r var(--dur-fast) var(--ease);
+  pointer-events: none;
+}
+
+.posts-chart__dot--active {
+  opacity: 1;
+}
+
+.posts-chart__guide {
+  stroke: color-mix(in srgb, var(--neon) 35%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  pointer-events: none;
+}
+
+.posts-chart__tick {
+  fill: var(--ink-muted);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.posts-chart__hit {
+  cursor: crosshair;
+  outline: none;
+}
+
+.posts-chart__hit:focus-visible {
+  stroke: color-mix(in srgb, var(--neon) 50%, transparent);
+  stroke-width: 1;
+}
+
+.posts-chart__tooltip {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  margin-top: -8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #1c1c1e;
+  border: 1px solid var(--hairline-strong);
+  box-shadow: 0 8px 24px color-mix(in srgb, #000 45%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  pointer-events: none;
+  z-index: 2;
+  min-width: 72px;
+}
+
+.posts-chart__tooltip-label {
+  font-size: 11px;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+
+.posts-chart__tooltip-value {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--neon);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .posts-chart-surface {
+    padding: 20px 16px 16px;
+  }
+
+  .posts-chart__canvas {
+    min-height: 240px;
+  }
 }
 
 .results-grid {
