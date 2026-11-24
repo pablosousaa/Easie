@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Loader2, Sparkles, Wand2 } from "lucide-react";
 import type { ProductDraft } from "@/lib/types";
 import { useToast } from "./ToastProvider";
@@ -11,6 +11,15 @@ type Props = {
   initial: ProductDraft;
   onGenerate: (product: ProductDraft) => void | Promise<void>;
   generating?: boolean;
+};
+
+type LookupResponse = {
+  name?: string;
+  price?: string;
+  originalPrice?: string;
+  freeShipping?: boolean;
+  warning?: string | null;
+  error?: string;
 };
 
 function validate(product: ProductDraft): Errors {
@@ -32,6 +41,21 @@ function validate(product: ProductDraft): Errors {
   return errors;
 }
 
+function looksLikeMlAffiliateLink(raw: string): boolean {
+  try {
+    const url = new URL(raw.trim());
+    const host = url.hostname.replace(/^www\./, "").toLowerCase();
+    return (
+      host === "meli.la" ||
+      host.endsWith("mercadolivre.com") ||
+      host.endsWith("mercadolivre.com.br") ||
+      host.endsWith("mercadolibre.com")
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function ProductForm({ initial, onGenerate, generating = false }: Props) {
   const { showToast } = useToast();
   const [product, setProduct] = useState<ProductDraft>({
@@ -41,6 +65,7 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
   });
   const [errors, setErrors] = useState<Errors>({});
   const [lookingUp, setLookingUp] = useState(false);
+  const lookupInFlight = useRef(false);
   const busy = lookingUp || generating;
 
   function update<K extends keyof ProductDraft>(key: K, value: ProductDraft[K]) {
@@ -54,12 +79,14 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
     }
   }
 
-  async function handleAutofill() {
-    const link = product.affiliateLink.trim();
+  async function runAutofill(linkOverride?: string) {
+    const link = (linkOverride ?? product.affiliateLink).trim();
     if (!link) {
       setErrors((e) => ({ ...e, affiliateLink: "Cole o link antes de preencher." }));
       return;
     }
+    if (lookupInFlight.current) return;
+    lookupInFlight.current = true;
     setLookingUp(true);
     try {
       const res = await fetch("/api/ml/lookup", {
@@ -67,36 +94,59 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: link }),
       });
-      const data = (await res.json()) as {
-        name?: string;
-        price?: string;
-        originalPrice?: string;
-        freeShipping?: boolean;
-        warning?: string | null;
-        error?: string;
-      };
+      const data = (await res.json()) as LookupResponse;
       if (!res.ok) {
         showToast(data.error || "Não foi possível preencher.", "error");
         return;
       }
+
+      const nextName = data.name?.trim() || "";
+      const nextPrice = data.price?.trim() || "";
+      const nextOriginal =
+        data.originalPrice !== undefined ? data.originalPrice.trim() : undefined;
+
       setProduct((prev) => ({
         ...prev,
-        name: data.name?.trim() || prev.name,
-        price: data.price?.trim() || prev.price,
+        affiliateLink: link,
+        name: nextName || prev.name,
+        price: nextPrice || prev.price,
         originalPrice:
-          data.originalPrice !== undefined
-            ? data.originalPrice.trim()
-            : prev.originalPrice,
+          nextOriginal !== undefined ? nextOriginal : prev.originalPrice,
         freeShipping: data.freeShipping ?? prev.freeShipping,
       }));
-      if (data.warning) showToast(data.warning);
-      else if (data.name) showToast("Campos preenchidos a partir do link.");
-      else showToast("Não deu para preencher. Complete manualmente.", "error");
+
+      if (data.warning) {
+        showToast(data.warning, nextPrice ? "success" : "error");
+      } else if (nextName && nextPrice) {
+        showToast(
+          nextOriginal
+            ? "Nome, preço e preço original preenchidos."
+            : "Nome e preço preenchidos a partir do link.",
+        );
+      } else if (nextName) {
+        showToast(
+          "Nome preenchido, mas o preço não veio do anúncio. Informe manualmente.",
+          "error",
+        );
+      } else {
+        showToast("Não deu para preencher. Complete manualmente.", "error");
+      }
     } catch {
       showToast("Falha ao consultar o link.", "error");
     } finally {
+      lookupInFlight.current = false;
       setLookingUp(false);
     }
+  }
+
+  function handleLinkPaste(e: React.ClipboardEvent<HTMLInputElement>) {
+    const pasted = e.clipboardData.getData("text").trim();
+    if (!pasted || !looksLikeMlAffiliateLink(pasted)) return;
+    // Let the input receive the paste, then autofill.
+    window.setTimeout(() => {
+      update("affiliateLink", pasted);
+      void runAutofill(pasted);
+    }, 0);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -122,9 +172,10 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
           type="url"
           inputMode="url"
           autoComplete="url"
-          placeholder="https://mercadolivre.com/sec/..."
+          placeholder="https://meli.la/… ou mercadolivre.com/sec/…"
           value={product.affiliateLink}
           onChange={(e) => update("affiliateLink", e.target.value)}
+          onPaste={handleLinkPaste}
           aria-invalid={Boolean(errors.affiliateLink)}
           aria-describedby={errors.affiliateLink ? "err-link" : "hint-autofill"}
         />
@@ -134,13 +185,13 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
           </p>
         ) : (
           <p id="hint-autofill" className="helper">
-            Cole o link e toque em preencher para tentar nome e preço
+            Cole o link para preencher nome, preço e preço original automaticamente
           </p>
         )}
         <button
           type="button"
           className="btn btn-secondary btn-sm field-action"
-          onClick={() => void handleAutofill()}
+          onClick={() => void runAutofill()}
           disabled={busy}
         >
           {lookingUp ? (

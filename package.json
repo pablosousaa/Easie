@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "npx --yes tsx --test src/lib/discount.test.ts",
+    "test": "npx --yes tsx --test src/lib/discount.test.ts src/lib/ml/lookup.test.ts",
     "user:create": "npx --yes tsx scripts/create-user.ts",
     "groups:seed": "npx --yes tsx scripts/seed-fc-groups.ts",
     "groups:clone-pablo": "npx --yes tsx scripts/seed-pablo-groups.ts",
