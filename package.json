@@ -9,6 +9,7 @@
     "lint": "eslint",
     "user:create": "npx --yes tsx scripts/create-user.ts",
     "groups:seed": "npx --yes tsx scripts/seed-fc-groups.ts",
+    "groups:clone-pablo": "npx --yes tsx scripts/seed-pablo-groups.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
   },

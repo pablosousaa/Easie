@@ -261,11 +261,205 @@ export async function seedSharedGroupsForAllUsers(): Promise<{
   return { users: users.length, inserted, updated, skipped };
 }
 
+/** Canonical source account whose groups are cloned onto every other user. */
+export const GROUP_SOURCE_USERNAME = "pablosousa";
+
+/**
+ * Upsert another user's groups from a source account (by username).
+ * Matches by normalized Facebook link — never duplicates, never removes extras.
+ * When a match exists, refreshes name, theme (categoria), rules, and active.
+ */
+export async function cloneGroupsFromUsername(
+  sourceUsername: string,
+  targetUserId: string,
+): Promise<{
+  sourceGroups: number;
+  inserted: number;
+  updated: number;
+  skipped: number;
+  skippedSelf: boolean;
+  sourceMissing: boolean;
+}> {
+  await ready();
+  const source = await findUserByUsername(sourceUsername);
+  if (!source) {
+    return {
+      sourceGroups: 0,
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+      skippedSelf: false,
+      sourceMissing: true,
+    };
+  }
+  if (source.id === targetUserId) {
+    return {
+      sourceGroups: 0,
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+      skippedSelf: true,
+      sourceMissing: false,
+    };
+  }
+
+  const sourceRows = await sqlAll<GroupRow>(
+    "SELECT * FROM groups WHERE user_id = ? ORDER BY created_at ASC",
+    [source.id],
+  );
+
+  const existing = await sqlAll<{
+    id: string;
+    link: string;
+    name: string;
+    theme: string;
+    rules: string;
+    active: number;
+  }>(
+    "SELECT id, link, name, theme, rules, active FROM groups WHERE user_id = ?",
+    [targetUserId],
+  );
+
+  const byNorm = new Map<
+    string,
+    {
+      id: string;
+      link: string;
+      name: string;
+      theme: string;
+      rules: string;
+      active: number;
+    }
+  >();
+  for (const g of existing) {
+    const norm = normalizeGroupLink(g.link);
+    if (norm) byNorm.set(norm, g);
+  }
+
+  let inserted = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  for (const src of sourceRows) {
+    const norm = normalizeGroupLink(src.link);
+    if (!norm) continue;
+    const match = byNorm.get(norm);
+    const active = src.active ? 1 : 0;
+    if (match) {
+      if (
+        match.name !== src.name ||
+        match.theme !== src.theme ||
+        match.rules !== src.rules ||
+        match.active !== active
+      ) {
+        await sqlRun(
+          "UPDATE groups SET name = ?, theme = ?, rules = ?, active = ? WHERE id = ?",
+          [src.name, src.theme, src.rules, active, match.id],
+        );
+        updated++;
+      } else {
+        skipped++;
+      }
+      continue;
+    }
+    await sqlRun(
+      `INSERT INTO groups (id, user_id, name, link, theme, rules, active, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        createId("grp"),
+        targetUserId,
+        src.name,
+        src.link,
+        src.theme,
+        src.rules,
+        active,
+        src.created_at || nowIso(),
+      ],
+    );
+    byNorm.set(norm, {
+      id: "",
+      link: src.link,
+      name: src.name,
+      theme: src.theme,
+      rules: src.rules,
+      active,
+    });
+    inserted++;
+  }
+
+  return {
+    sourceGroups: sourceRows.length,
+    inserted,
+    updated,
+    skipped,
+    skippedSelf: false,
+    sourceMissing: false,
+  };
+}
+
+/** Clone pablosousa groups onto every other account (idempotent). */
+export async function cloneGroupsFromSourceForAllUsers(
+  sourceUsername: string = GROUP_SOURCE_USERNAME,
+): Promise<{
+  sourceUsername: string;
+  sourceGroups: number;
+  targets: number;
+  inserted: number;
+  updated: number;
+  skipped: number;
+  sourceMissing: boolean;
+}> {
+  await ready();
+  const source = await findUserByUsername(sourceUsername);
+  if (!source) {
+    return {
+      sourceUsername,
+      sourceGroups: 0,
+      targets: 0,
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+      sourceMissing: true,
+    };
+  }
+
+  const sourceCount = await sqlGet<{ n: number | string }>(
+    "SELECT COUNT(*) as n FROM groups WHERE user_id = ?",
+    [source.id],
+  );
+  const users = await sqlAll<{ id: string }>(
+    "SELECT id FROM users WHERE id != ?",
+    [source.id],
+  );
+
+  let inserted = 0;
+  let updated = 0;
+  let skipped = 0;
+  for (const u of users) {
+    const r = await cloneGroupsFromUsername(sourceUsername, u.id);
+    inserted += r.inserted;
+    updated += r.updated;
+    skipped += r.skipped;
+  }
+
+  return {
+    sourceUsername,
+    sourceGroups: Number(sourceCount?.n ?? 0),
+    targets: users.length,
+    inserted,
+    updated,
+    skipped,
+    sourceMissing: false,
+  };
+}
+
 export async function loadUserStore(userId: string): Promise<EasieStore> {
   await ready();
   const user = await findUserById(userId);
   // Ensure shared FC catalog is present before reading groups (idempotent).
   await seedSharedGroups(userId);
+  // Mirror pablosousa's group list onto other accounts (idempotent by link).
+  await cloneGroupsFromUsername(GROUP_SOURCE_USERNAME, userId);
   const productRows = await sqlAll<ProductRow>(
     `SELECT * FROM products WHERE user_id = ?
      ORDER BY queue_order ASC, created_at ASC`,

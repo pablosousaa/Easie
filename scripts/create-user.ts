@@ -12,6 +12,8 @@
 import { createId } from "../src/lib/ids";
 import { hashPassword } from "../src/lib/password";
 import {
+  GROUP_SOURCE_USERNAME,
+  cloneGroupsFromUsername,
   findUserByUsername,
   insertUser,
   seedDefaultTemplate,
@@ -94,6 +96,7 @@ async function main() {
   await insertUser({ id, name, username, passwordHash, repostWindowDays: 7 });
   await seedDefaultTemplate(id);
   await seedSharedGroups(id);
+  await cloneGroupsFromUsername(GROUP_SOURCE_USERNAME, id);
 
   console.log("Usuário criado:");
   console.log(`  id:       ${id}`);
