@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import {
   BarChart3,
-  History,
   ListOrdered,
   Package,
   Sparkles,
@@ -19,7 +18,6 @@ const NAV = [
   { href: "/pegar-produtos", label: "Pegar", icon: Package },
   { href: "/fila", label: "Fila", icon: ListOrdered },
   { href: "/grupos", label: "Grupos", icon: Users },
-  { href: "/historico", label: "Histórico", icon: History },
   { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { href: "/conta", label: "Conta", icon: UserRound },
 ] as const;
@@ -29,6 +27,7 @@ const MOBILE_TABS = [
   { href: "/pegar-produtos", label: "Pegar", icon: Package },
   { href: "/grupos", label: "Grupos", icon: Users },
   { href: "/fila", label: "Fila", icon: ListOrdered },
+  { href: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { href: "/conta", label: "Conta", icon: UserRound },
 ] as const;
 
@@ -134,7 +133,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   aria-current={current ? "page" : undefined}
                 >
                   <Icon size={18} strokeWidth={1.5} aria-hidden />
-                  {label}
+                  <span>{label}</span>
                 </Link>
               );
             })}
