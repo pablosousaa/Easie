@@ -154,6 +154,7 @@ export function exportStoreToCsv(store: EasieStore): string {
       "variationText",
       "variationIndex",
       "postedAt",
+      "postedHistory",
       "createdAt",
     ]),
   );
@@ -167,6 +168,7 @@ export function exportStoreToCsv(store: EasieStore): string {
         p.variationText,
         p.variationIndex,
         p.postedAt,
+        JSON.stringify(p.postedHistory ?? []),
         p.createdAt,
       ]),
     );
@@ -267,14 +269,33 @@ export function importStoreFromCsv(raw: string): CsvImportResult {
         category: obj.category ?? "",
       });
     } else if (section === "postings") {
+      let postedHistory: string[] = [];
+      if (obj.postedHistory) {
+        try {
+          const parsed = JSON.parse(obj.postedHistory) as unknown;
+          if (Array.isArray(parsed)) {
+            postedHistory = parsed.filter(
+              (t): t is string => typeof t === "string" && t.length > 0,
+            );
+          }
+        } catch {
+          postedHistory = [];
+        }
+      }
+      const status = (obj.status as PostingStatus) || "pending";
+      const postedAt = obj.postedAt || null;
+      if (status === "posted" && postedAt && !postedHistory.includes(postedAt)) {
+        postedHistory = [...postedHistory, postedAt];
+      }
       postings.push({
         id: obj.id,
         productId: obj.productId,
         groupId: obj.groupId,
-        status: (obj.status as PostingStatus) || "pending",
+        status,
         variationText: obj.variationText ?? "",
         variationIndex: parseIntSafe(obj.variationIndex),
-        postedAt: obj.postedAt || null,
+        postedAt,
+        postedHistory,
         createdAt: obj.createdAt || new Date().toISOString(),
       });
     }

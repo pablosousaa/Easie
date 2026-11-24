@@ -1,4 +1,5 @@
 import type { Posting } from "./types";
+import { lastHistoryPostedAt } from "./posting-history";
 
 export function daysBetween(isoA: string, isoB: string): number {
   const a = new Date(isoA).getTime();
@@ -6,22 +7,22 @@ export function daysBetween(isoA: string, isoB: string): number {
   return Math.abs(b - a) / (1000 * 60 * 60 * 24);
 }
 
-/** Last posted datetime for product+group (any prior posting marked posted). */
+/**
+ * Last completed post datetime for product+group.
+ * Uses postedHistory so cooldown still works after "Não postado" / re-open.
+ */
 export function lastPostedAt(
   postings: Posting[],
   productId: string,
   groupId: string,
 ): string | null {
-  const hits = postings
-    .filter(
-      (p) =>
-        p.productId === productId &&
-        p.groupId === groupId &&
-        p.status === "posted" &&
-        p.postedAt,
-    )
-    .sort((a, b) => (b.postedAt ?? "").localeCompare(a.postedAt ?? ""));
-  return hits[0]?.postedAt ?? null;
+  let latest: string | null = null;
+  for (const p of postings) {
+    if (p.productId !== productId || p.groupId !== groupId) continue;
+    const at = lastHistoryPostedAt(p);
+    if (at && (!latest || at > latest)) latest = at;
+  }
+  return latest;
 }
 
 export type RepostGuard =

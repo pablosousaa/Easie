@@ -79,6 +79,7 @@ function ensureSchema(sqlite: DatabaseSync) {
       variation_text TEXT NOT NULL DEFAULT '',
       variation_index INTEGER NOT NULL DEFAULT 0,
       posted_at TEXT,
+      posted_history TEXT NOT NULL DEFAULT '[]',
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS postings_user_idx ON postings(user_id);
@@ -153,6 +154,16 @@ function migrateSchema(sqlite: DatabaseSync) {
   const tplNames = new Set(tplCols.map((c) => c.name));
   if (!tplNames.has("category")) {
     sqlite.exec("ALTER TABLE templates ADD COLUMN category TEXT NOT NULL DEFAULT ''");
+  }
+
+  const postCols = sqlite
+    .prepare("PRAGMA table_info(postings)")
+    .all() as Array<{ name: string }>;
+  const postNames = new Set(postCols.map((c) => c.name));
+  if (!postNames.has("posted_history")) {
+    sqlite.exec(
+      "ALTER TABLE postings ADD COLUMN posted_history TEXT NOT NULL DEFAULT '[]'",
+    );
   }
 
   migrateUsersToUsername(sqlite);

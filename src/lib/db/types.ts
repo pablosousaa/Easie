@@ -60,5 +60,7 @@ export type PostingRow = {
   variation_text: string;
   variation_index: number;
   posted_at: string | null;
+  /** JSON array of ISO timestamps; may be missing on legacy rows. */
+  posted_history?: string | null;
   created_at: string;
 };

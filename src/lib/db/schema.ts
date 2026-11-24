@@ -100,6 +100,8 @@ export const postings = pgTable(
     variationText: text("variation_text").notNull().default(""),
     variationIndex: integer("variation_index").notNull().default(0),
     postedAt: text("posted_at"),
+    /** JSON array of ISO timestamps — append-only Relatórios history. */
+    postedHistory: text("posted_history").notNull().default("[]"),
     createdAt: text("created_at").notNull(),
   },
   (t) => [

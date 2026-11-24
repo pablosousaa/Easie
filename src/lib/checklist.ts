@@ -6,6 +6,7 @@ import type {
   TextVariation,
 } from "./types";
 import { createId, nowIso } from "./ids";
+import { ensurePostedHistory, postedTimestamps } from "./posting-history";
 
 export function activeGroups(store: EasieStore): FacebookGroup[] {
   return store.groups.filter((g) => g.active);
@@ -17,9 +18,17 @@ export function ensureChecklist(
   variations: TextVariation[],
 ): EasieStore {
   const groups = activeGroups(store);
+  const activeIds = new Set(groups.map((g) => g.id));
   const existing = store.postings.filter((p) => p.productId === product.id);
   const byGroup = new Map(existing.map((p) => [p.groupId, p]));
-  const nextPostings: Posting[] = [...store.postings.filter((p) => p.productId !== product.id)];
+  // Keep other products' rows + this product's inactive-group history (Relatórios).
+  const nextPostings: Posting[] = [
+    ...store.postings.filter((p) => p.productId !== product.id),
+    ...existing.filter(
+      (p) =>
+        !activeIds.has(p.groupId) && postedTimestamps(p).length > 0,
+    ),
+  ];
 
   groups.forEach((group, index) => {
     const current = byGroup.get(group.id);
@@ -40,6 +49,7 @@ export function ensureChecklist(
           : null;
       nextPostings.push({
         ...current,
+        postedHistory: ensurePostedHistory(current),
         variationText: current.variationText || selected?.text || "",
         variationIndex,
       });
@@ -54,6 +64,7 @@ export function ensureChecklist(
         variationText: variation?.text ?? "",
         variationIndex: fallbackIndex,
         postedAt: null,
+        postedHistory: [],
         createdAt: nowIso(),
       });
     }
@@ -82,10 +93,23 @@ export function markPostingStatus(
 ): EasieStore {
   const postings = store.postings.map((p) => {
     if (p.id !== postingId) return p;
+    // Fold any live postedAt into history before changing status so Relatórios
+    // keeps every completed post across "Não postado" / re-post cycles.
+    const history = ensurePostedHistory(p);
+    if (status === "posted") {
+      const at = nowIso();
+      return {
+        ...p,
+        status,
+        postedAt: at,
+        postedHistory: [...history, at],
+      };
+    }
     return {
       ...p,
       status,
-      postedAt: status === "posted" ? nowIso() : null,
+      postedAt: null,
+      postedHistory: history,
     };
   });
   return { ...store, postings };

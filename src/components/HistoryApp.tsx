@@ -12,6 +12,7 @@ import {
   subscribeStore,
 } from "@/lib/storage";
 import { formatDateTimePt } from "@/lib/format";
+import { postedTimestamps } from "@/lib/posting-history";
 
 function isHistoryProduct(status: string): boolean {
   return status === "done" || status === "archived";
@@ -89,9 +90,16 @@ export function HistoryApp() {
         ) : (
           <ul className="entity-list">
             {done.map((product) => {
-              const posted = store.postings.filter(
-                (p) => p.productId === product.id && p.status === "posted",
-              );
+              const postedEntries = store.postings
+                .filter((p) => p.productId === product.id)
+                .flatMap((p) =>
+                  postedTimestamps(p).map((at) => ({
+                    key: `${p.id}-${at}`,
+                    groupId: p.groupId,
+                    postedAt: at,
+                  })),
+                )
+                .sort((a, b) => b.postedAt.localeCompare(a.postedAt));
               return (
                 <li key={product.id} className="entity-card entity-card--stack">
                   <div className="entity-card__body">
@@ -99,15 +107,15 @@ export function HistoryApp() {
                     <p className="helper">
                       Concluído em {formatDateTimePt(product.completedAt)}
                     </p>
-                    {posted.length === 0 ? (
+                    {postedEntries.length === 0 ? (
                       <p className="helper">Nenhum grupo marcado como postado.</p>
                     ) : (
                       <ul className="history-groups">
-                        {posted.map((p) => (
-                          <li key={p.id}>
-                            <span>{groupName(p.groupId)}</span>
-                            <time dateTime={p.postedAt ?? undefined}>
-                              {formatDateTimePt(p.postedAt)}
+                        {postedEntries.map((entry) => (
+                          <li key={entry.key}>
+                            <span>{groupName(entry.groupId)}</span>
+                            <time dateTime={entry.postedAt}>
+                              {formatDateTimePt(entry.postedAt)}
                             </time>
                           </li>
                         ))}
