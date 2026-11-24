@@ -249,8 +249,8 @@ export function ChecklistApp({ productId }: Props) {
 
     const updated = next.products.find((p) => p.id === current.id);
     if (updated?.status === "done") {
-      showToast("Produto concluído — foi para o histórico");
-      router.push("/historico");
+      showToast("Produto concluído");
+      router.push("/fila");
     }
   }
 
