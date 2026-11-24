@@ -1,4 +1,5 @@
-import type { EasieStore, Posting, Product } from "./types";
+import type { EasieStore, Product } from "./types";
+import { postedTimestamps } from "./posting-history";
 
 function startOfLocalDay(d: Date): Date {
   const x = new Date(d);
@@ -15,10 +16,12 @@ function startOfLocalWeek(d: Date): Date {
   return x;
 }
 
-function postedAtMs(posting: Posting): number | null {
-  if (posting.status !== "posted" || !posting.postedAt) return null;
-  const t = new Date(posting.postedAt).getTime();
-  return Number.isFinite(t) ? t : null;
+function localDayKey(ms: number): string {
+  const d = new Date(ms);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 export type PostCounts = {
@@ -27,6 +30,7 @@ export type PostCounts = {
   total: number;
 };
 
+/** Count every completed post timestamp (postedHistory), not just live status. */
 export function countPosted(store: EasieStore, now: Date): PostCounts {
   const dayStart = startOfLocalDay(now).getTime();
   const weekStart = startOfLocalWeek(now).getTime();
@@ -35,11 +39,13 @@ export function countPosted(store: EasieStore, now: Date): PostCounts {
   let total = 0;
 
   for (const p of store.postings) {
-    const ms = postedAtMs(p);
-    if (ms == null) continue;
-    total += 1;
-    if (ms >= dayStart) today += 1;
-    if (ms >= weekStart) week += 1;
+    for (const iso of postedTimestamps(p)) {
+      const ms = new Date(iso).getTime();
+      if (!Number.isFinite(ms)) continue;
+      total += 1;
+      if (ms >= dayStart) today += 1;
+      if (ms >= weekStart) week += 1;
+    }
   }
 
   return { today, week, total };
@@ -53,7 +59,7 @@ export function postsPerDay(store: EasieStore, days: number, now: Date): DayBuck
   for (let i = days - 1; i >= 0; i--) {
     const d = startOfLocalDay(now);
     d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
+    const key = localDayKey(d.getTime());
     buckets.push({
       date: key,
       label: d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
@@ -63,11 +69,12 @@ export function postsPerDay(store: EasieStore, days: number, now: Date): DayBuck
 
   const index = new Map(buckets.map((b, i) => [b.date, i]));
   for (const p of store.postings) {
-    const ms = postedAtMs(p);
-    if (ms == null) continue;
-    const key = new Date(ms).toISOString().slice(0, 10);
-    const idx = index.get(key);
-    if (idx != null) buckets[idx].count += 1;
+    for (const iso of postedTimestamps(p)) {
+      const ms = new Date(iso).getTime();
+      if (!Number.isFinite(ms)) continue;
+      const idx = index.get(localDayKey(ms));
+      if (idx != null) buckets[idx].count += 1;
+    }
   }
   return buckets;
 }

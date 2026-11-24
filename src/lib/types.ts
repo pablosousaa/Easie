@@ -65,6 +65,11 @@ export type Posting = {
   variationText: string;
   variationIndex: number;
   postedAt: string | null;
+  /**
+   * Append-only ISO timestamps of every completed post for Relatórios (RF36).
+   * Survives "Não postado" / re-post window resets; only cleared with Limpar histórico.
+   */
+  postedHistory: string[];
   createdAt: string;
 };
 

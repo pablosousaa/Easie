@@ -113,7 +113,24 @@ function normalize(parsed: Partial<EasieStore>): EasieStore {
       ? (parsed.variations as TextVariation[])
       : [],
     groups: Array.isArray(parsed.groups) ? (parsed.groups as FacebookGroup[]) : [],
-    postings: Array.isArray(parsed.postings) ? (parsed.postings as Posting[]) : [],
+    postings: Array.isArray(parsed.postings)
+      ? (parsed.postings as Posting[]).map((p) => {
+          const history = Array.isArray(p.postedHistory)
+            ? p.postedHistory.filter(
+                (t): t is string => typeof t === "string" && t.length > 0,
+              )
+            : [];
+          // Seed history from live postedAt for pre-history local caches.
+          if (
+            p.status === "posted" &&
+            p.postedAt &&
+            !history.includes(p.postedAt)
+          ) {
+            history.push(p.postedAt);
+          }
+          return { ...p, postedHistory: history };
+        })
+      : [],
     settings,
     trendingTakenIds: Array.isArray(parsed.trendingTakenIds)
       ? (parsed.trendingTakenIds as string[])

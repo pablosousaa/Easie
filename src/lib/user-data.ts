@@ -65,6 +65,29 @@ function mapTemplate(row: TemplateRow): TextTemplate {
   };
 }
 
+function parsePostedHistory(
+  raw: string | null | undefined,
+  postedAt: string | null,
+  status: PostingRow["status"],
+): string[] {
+  let hist: string[] = [];
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed)) {
+        hist = parsed.filter((t): t is string => typeof t === "string" && t.length > 0);
+      }
+    } catch {
+      hist = [];
+    }
+  }
+  // Legacy rows: seed history from live postedAt so Relatórios doesn't lose counts.
+  if (status === "posted" && postedAt && !hist.includes(postedAt)) {
+    hist = [...hist, postedAt];
+  }
+  return hist;
+}
+
 function mapPosting(row: PostingRow): Posting {
   return {
     id: row.id,
@@ -74,6 +97,11 @@ function mapPosting(row: PostingRow): Posting {
     variationText: row.variation_text,
     variationIndex: row.variation_index,
     postedAt: row.posted_at,
+    postedHistory: parsePostedHistory(
+      row.posted_history,
+      row.posted_at,
+      row.status,
+    ),
     createdAt: row.created_at,
   };
 }
@@ -658,8 +686,8 @@ export async function migrateLocalData(
       await sqlRun(
         `INSERT INTO postings (
            id, user_id, product_id, group_id, status, variation_text,
-           variation_index, posted_at, created_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           variation_index, posted_at, posted_history, created_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           userId,
@@ -669,6 +697,9 @@ export async function migrateLocalData(
           post.variationText ?? "",
           post.variationIndex ?? 0,
           post.postedAt,
+          JSON.stringify(
+            Array.isArray(post.postedHistory) ? post.postedHistory : [],
+          ),
           post.createdAt || nowIso(),
         ],
       );
@@ -803,8 +834,8 @@ export async function replaceUserStore(
     await sqlRun(
       `INSERT INTO postings (
          id, user_id, product_id, group_id, status, variation_text,
-         variation_index, posted_at, created_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         variation_index, posted_at, posted_history, created_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         post.id,
         userId,
@@ -814,6 +845,9 @@ export async function replaceUserStore(
         post.variationText,
         post.variationIndex,
         post.postedAt,
+        JSON.stringify(
+          Array.isArray(post.postedHistory) ? post.postedHistory : [],
+        ),
         post.createdAt || nowIso(),
       ],
     );

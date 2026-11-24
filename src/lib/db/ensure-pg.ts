@@ -64,8 +64,10 @@ const STATEMENTS = [
   variation_text TEXT NOT NULL DEFAULT '',
   variation_index INTEGER NOT NULL DEFAULT 0,
   posted_at TEXT,
+  posted_history TEXT NOT NULL DEFAULT '[]',
   created_at TEXT NOT NULL DEFAULT ''
 )`,
+  `ALTER TABLE postings ADD COLUMN IF NOT EXISTS posted_history TEXT NOT NULL DEFAULT '[]'`,
   `CREATE INDEX IF NOT EXISTS postings_user_idx ON postings(user_id)`,
   `CREATE INDEX IF NOT EXISTS postings_product_idx ON postings(product_id)`,
   `CREATE INDEX IF NOT EXISTS postings_group_idx ON postings(group_id)`,
