@@ -57,14 +57,19 @@ export function ChecklistApp({ productId }: Props) {
 
   const product = store.products.find((p) => p.id === productId);
 
+  /** Prefer the 5 texts from Gerar (may include edits); else regenerate from templates + product. */
+  const variations = useMemo(() => {
+    if (!product) return [];
+    if (store.variations.length > 0) return store.variations;
+    return generateVariations(product);
+  }, [product, store.variations]);
+
   const prepared = useMemo(() => {
     if (!product) return store;
-    const variations =
-      store.variations.length > 0
-        ? store.variations
-        : generateVariations(product);
-    return ensureChecklist(store, product, variations);
-  }, [product, store]);
+    const list =
+      variations.length > 0 ? variations : generateVariations(product);
+    return ensureChecklist(store, product, list);
+  }, [product, store, variations]);
 
   async function persist(next: typeof store) {
     replaceStore(next);
@@ -145,6 +150,33 @@ export function ChecklistApp({ productId }: Props) {
       showToast("Não foi possível copiar", "error");
       return false;
     }
+  }
+
+  /** Switch which of the 5 Gerar texts is shown/copied for this queue item. */
+  async function selectVariation(postingId: string, index: number) {
+    const variation = variations[index];
+    if (!variation) return;
+    const posting = prepared.postings.find((p) => p.id === postingId);
+    if (
+      posting &&
+      posting.variationIndex === index &&
+      posting.variationText === variation.text
+    ) {
+      return;
+    }
+    const next = {
+      ...prepared,
+      postings: prepared.postings.map((p) =>
+        p.id === postingId
+          ? {
+              ...p,
+              variationIndex: index,
+              variationText: variation.text,
+            }
+          : p,
+      ),
+    };
+    await persist(next);
   }
 
   /** One tap: copy variation, then open the Facebook group. */
@@ -357,8 +389,53 @@ export function ChecklistApp({ productId }: Props) {
 
                   {!done ? (
                     <>
+                      <div className="variation-switcher">
+                        <p
+                          className="label"
+                          id={`var-pick-${posting.id}`}
+                        >
+                          Variação
+                          {(() => {
+                            const idx = posting.variationIndex % Math.max(variations.length, 5);
+                            const name = variations[idx]?.label?.trim();
+                            return name ? ` · ${name}` : "";
+                          })()}
+                        </p>
+                        <div
+                          className="segmented segmented--five"
+                          role="radiogroup"
+                          aria-labelledby={`var-pick-${posting.id}`}
+                        >
+                          {[0, 1, 2, 3, 4].map((i) => {
+                            const selected =
+                              (posting.variationIndex % 5) === i;
+                            const label = variations[i]?.label?.trim();
+                            return (
+                              <button
+                                key={i}
+                                type="button"
+                                role="radio"
+                                aria-checked={selected}
+                                aria-label={
+                                  label
+                                    ? `Variação ${i + 1}: ${label}`
+                                    : `Variação ${i + 1}`
+                                }
+                                className={selected ? "is-active" : undefined}
+                                disabled={!variations[i]}
+                                onClick={() =>
+                                  void selectVariation(posting.id, i)
+                                }
+                              >
+                                {i + 1}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                       <label className="label" htmlFor={`var-${posting.id}`}>
-                        Texto sugerido (variação {(posting.variationIndex % 5) + 1})
+                        Texto sugerido (variação{" "}
+                        {(posting.variationIndex % 5) + 1})
                       </label>
                       <textarea
                         id={`var-${posting.id}`}
