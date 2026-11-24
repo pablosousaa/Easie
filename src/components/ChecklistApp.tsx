@@ -154,7 +154,13 @@ export function ChecklistApp({ productId }: Props) {
 
   /** Switch which of the 5 Gerar texts is shown/copied for this queue item. */
   async function selectVariation(postingId: string, index: number) {
-    const variation = variations[index];
+    const list =
+      variations.length > 0
+        ? variations
+        : product
+          ? generateVariations(product)
+          : [];
+    const variation = list[index];
     if (!variation) return;
     const posting = prepared.postings.find((p) => p.id === postingId);
     if (
@@ -164,6 +170,7 @@ export function ChecklistApp({ productId }: Props) {
     ) {
       return;
     }
+    // Write index + matching text together so preview / Copiar stay in sync.
     const next = {
       ...prepared,
       postings: prepared.postings.map((p) =>
@@ -177,6 +184,26 @@ export function ChecklistApp({ productId }: Props) {
       ),
     };
     await persist(next);
+  }
+
+  /**
+   * Text for preview + Copiar.
+   * Prefer the selected variation's stock text when stored text is another
+   * stock variation (index/text desync). Keep real textarea edits.
+   */
+  function textForPosting(posting: {
+    variationIndex: number;
+    variationText: string;
+  }): string {
+    const n = Math.max(variations.length, 1);
+    const idx = ((posting.variationIndex % n) + n) % n;
+    const selected = variations[idx]?.text ?? "";
+    const stored = posting.variationText;
+    if (!stored) return selected;
+    if (!selected || stored === selected) return stored;
+    const stock = new Set(variations.map((v) => v.text));
+    if (stock.has(stored)) return selected;
+    return stored;
   }
 
   /** One tap: copy variation, then open the Facebook group. */
@@ -439,9 +466,10 @@ export function ChecklistApp({ productId }: Props) {
                       </label>
                       <textarea
                         id={`var-${posting.id}`}
+                        key={`${posting.id}-v${posting.variationIndex % 5}`}
                         className="textarea textarea--compact"
                         rows={4}
-                        value={posting.variationText}
+                        value={textForPosting(posting)}
                         onChange={(e) => {
                           const text = e.target.value;
                           const next = {
@@ -471,7 +499,7 @@ export function ChecklistApp({ productId }: Props) {
                         aria-busy={busyId === posting.id}
                         onClick={() =>
                           void copyAndOpen(
-                            posting.variationText,
+                            textForPosting(posting),
                             group.link,
                             posting.id,
                           )
@@ -497,7 +525,9 @@ export function ChecklistApp({ productId }: Props) {
                         <button
                           type="button"
                           className="btn btn-ghost btn-sm"
-                          onClick={() => void copyText(posting.variationText)}
+                          onClick={() =>
+                            void copyText(textForPosting(posting))
+                          }
                         >
                           <Copy size={16} aria-hidden />
                           Copiar

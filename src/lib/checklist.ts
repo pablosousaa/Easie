@@ -23,23 +23,36 @@ export function ensureChecklist(
 
   groups.forEach((group, index) => {
     const current = byGroup.get(group.id);
-    const variation =
-      variations.length > 0 ? variations[index % variations.length] : null;
+    const fallbackIndex = variations.length
+      ? index % variations.length
+      : 0;
     if (current) {
+      // variationIndex 0 is valid — never use `||` (treats 0 as missing).
+      const variationIndex = Number.isFinite(current.variationIndex)
+        ? current.variationIndex
+        : fallbackIndex;
+      const selected =
+        variations.length > 0
+          ? variations[
+              ((variationIndex % variations.length) + variations.length) %
+                variations.length
+            ]
+          : null;
       nextPostings.push({
         ...current,
-        variationText:
-          current.variationText || variation?.text || "",
-        variationIndex: current.variationIndex || index % Math.max(variations.length, 1),
+        variationText: current.variationText || selected?.text || "",
+        variationIndex,
       });
     } else {
+      const variation =
+        variations.length > 0 ? variations[fallbackIndex] : null;
       nextPostings.push({
         id: createId("pst"),
         productId: product.id,
         groupId: group.id,
         status: "pending",
         variationText: variation?.text ?? "",
-        variationIndex: variations.length ? index % variations.length : 0,
+        variationIndex: fallbackIndex,
         postedAt: null,
         createdAt: nowIso(),
       });
