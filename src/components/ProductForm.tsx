@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Loader2, Sparkles, Wand2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Sparkles, Wand2 } from "lucide-react";
 import type { ProductDraft } from "@/lib/types";
 import { useToast } from "./ToastProvider";
 
@@ -25,19 +25,19 @@ type LookupResponse = {
 function validate(product: ProductDraft): Errors {
   const errors: Errors = {};
   if (!product.affiliateLink.trim()) {
-    errors.affiliateLink = "Informe o link de afiliado.";
+    errors.affiliateLink = "Informe o link de afiliado";
   } else {
     try {
       const url = new URL(product.affiliateLink.trim());
       if (!["http:", "https:"].includes(url.protocol)) {
-        errors.affiliateLink = "O link precisa começar com http ou https.";
+        errors.affiliateLink = "O link precisa começar com http ou https";
       }
     } catch {
-      errors.affiliateLink = "Link inválido. Cole a URL completa.";
+      errors.affiliateLink = "Link inválido. Cole a URL completa";
     }
   }
-  if (!product.name.trim()) errors.name = "Informe o nome do produto.";
-  if (!product.price.trim()) errors.price = "Informe o preço.";
+  if (!product.name.trim()) errors.name = "Informe o nome do produto";
+  if (!product.price.trim()) errors.price = "Informe o preço";
   return errors;
 }
 
@@ -65,8 +65,12 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
   });
   const [errors, setErrors] = useState<Errors>({});
   const [lookingUp, setLookingUp] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(
+    Boolean(initial.name.trim() || initial.price.trim()),
+  );
   const lookupInFlight = useRef(false);
   const busy = lookingUp || generating;
+  const hasLink = Boolean(product.affiliateLink.trim());
 
   function update<K extends keyof ProductDraft>(key: K, value: ProductDraft[K]) {
     setProduct((prev) => ({ ...prev, [key]: value }));
@@ -82,7 +86,7 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
   async function runAutofill(linkOverride?: string) {
     const link = (linkOverride ?? product.affiliateLink).trim();
     if (!link) {
-      setErrors((e) => ({ ...e, affiliateLink: "Cole o link antes de preencher." }));
+      setErrors((e) => ({ ...e, affiliateLink: "Cole o link antes de preencher" }));
       return;
     }
     if (lookupInFlight.current) return;
@@ -96,7 +100,8 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
       });
       const data = (await res.json()) as LookupResponse;
       if (!res.ok) {
-        showToast(data.error || "Não foi possível preencher.", "error");
+        showToast(data.error || "Não foi possível preencher", "error");
+        setDetailsOpen(true);
         return;
       }
 
@@ -114,25 +119,22 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
           nextOriginal !== undefined ? nextOriginal : prev.originalPrice,
         freeShipping: data.freeShipping ?? prev.freeShipping,
       }));
+      setDetailsOpen(true);
 
       if (data.warning) {
         showToast(data.warning, nextPrice ? "success" : "error");
       } else if (nextName && nextPrice) {
         showToast(
-          nextOriginal
-            ? "Nome, preço e preço original preenchidos."
-            : "Nome e preço preenchidos a partir do link.",
+          nextOriginal ? "Nome e preços preenchidos" : "Nome e preço preenchidos",
         );
       } else if (nextName) {
-        showToast(
-          "Nome preenchido, mas o preço não veio do anúncio. Informe manualmente.",
-          "error",
-        );
+        showToast("Nome ok — informe o preço", "error");
       } else {
-        showToast("Não deu para preencher. Complete manualmente.", "error");
+        showToast("Complete os campos manualmente", "error");
       }
     } catch {
-      showToast("Falha ao consultar o link.", "error");
+      showToast("Falha ao consultar o link", "error");
+      setDetailsOpen(true);
     } finally {
       lookupInFlight.current = false;
       setLookingUp(false);
@@ -142,7 +144,6 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
   function handleLinkPaste(e: React.ClipboardEvent<HTMLInputElement>) {
     const pasted = e.clipboardData.getData("text").trim();
     if (!pasted || !looksLikeMlAffiliateLink(pasted)) return;
-    // Let the input receive the paste, then autofill.
     window.setTimeout(() => {
       update("affiliateLink", pasted);
       void runAutofill(pasted);
@@ -153,13 +154,16 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
     e.preventDefault();
     const nextErrors = validate(product);
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
+    if (Object.keys(nextErrors).length > 0) {
+      setDetailsOpen(true);
+      return;
+    }
     void onGenerate(product);
   }
 
   return (
-    <form className="surface" onSubmit={handleSubmit} noValidate>
-      <div className="field">
+    <form className="surface product-form" onSubmit={handleSubmit} noValidate>
+      <div className="field field--hero">
         <label className="label" htmlFor="affiliateLink">
           Link de afiliado
           <span className="label__required" aria-hidden>
@@ -172,7 +176,7 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
           type="url"
           inputMode="url"
           autoComplete="url"
-          placeholder="https://meli.la/… ou mercadolivre.com/sec/…"
+          placeholder="Cole o link do Mercado Livre"
           value={product.affiliateLink}
           onChange={(e) => update("affiliateLink", e.target.value)}
           onPaste={handleLinkPaste}
@@ -185,118 +189,143 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
           </p>
         ) : (
           <p id="hint-autofill" className="helper">
-            Cole o link para preencher nome, preço e preço original automaticamente
+            Cole o link → Preencher (nome, preço e % OFF)
           </p>
         )}
         <button
           type="button"
-          className="btn btn-secondary btn-sm field-action"
+          className="btn btn-primary btn-block field-action"
           onClick={() => void runAutofill()}
-          disabled={busy}
+          disabled={busy || !hasLink}
         >
           {lookingUp ? (
             <Loader2 size={16} strokeWidth={1.5} className="spin" aria-hidden />
           ) : (
             <Wand2 size={16} strokeWidth={1.5} aria-hidden />
           )}
-          {lookingUp ? "Buscando…" : "Preencher a partir do link"}
+          {lookingUp ? "Buscando…" : "Preencher"}
         </button>
       </div>
 
-      <div className="field">
-        <label className="label" htmlFor="name">
-          Nome do produto
-          <span className="label__required" aria-hidden>
-            *
+      <button
+        type="button"
+        className="product-form__toggle"
+        aria-expanded={detailsOpen}
+        onClick={() => setDetailsOpen((v) => !v)}
+      >
+        {detailsOpen ? (
+          <ChevronUp size={16} strokeWidth={1.5} aria-hidden />
+        ) : (
+          <ChevronDown size={16} strokeWidth={1.5} aria-hidden />
+        )}
+        {detailsOpen ? "Ocultar detalhes" : "Nome, preço e benefícios"}
+        {!detailsOpen && (product.name || product.price) ? (
+          <span className="product-form__toggle-meta">
+            {[product.name, product.price].filter(Boolean).join(" · ")}
           </span>
-        </label>
-        <input
-          id="name"
-          className={`input${errors.name ? " input--error" : ""}`}
-          type="text"
-          autoComplete="off"
-          placeholder="Ex.: Cascata Natal 400 Leds"
-          value={product.name}
-          onChange={(e) => update("name", e.target.value)}
-          aria-invalid={Boolean(errors.name)}
-          aria-describedby={errors.name ? "err-name" : undefined}
-        />
-        {errors.name ? (
-          <p id="err-name" className="field__error">
-            {errors.name}
-          </p>
         ) : null}
-      </div>
+      </button>
 
-      <div className="field">
-        <label className="label" htmlFor="price">
-          Preço
-          <span className="label__required" aria-hidden>
-            *
-          </span>
-        </label>
-        <input
-          id="price"
-          className={`input${errors.price ? " input--error" : ""}`}
-          type="text"
-          inputMode="decimal"
-          placeholder="72,90"
-          value={product.price}
-          onChange={(e) => update("price", e.target.value)}
-          aria-invalid={Boolean(errors.price)}
-          aria-describedby={errors.price ? "err-price" : undefined}
-        />
-        {errors.price ? (
-          <p id="err-price" className="field__error">
-            {errors.price}
-          </p>
-        ) : null}
-      </div>
+      {detailsOpen ? (
+        <div className="product-form__details">
+          <div className="field">
+            <label className="label" htmlFor="name">
+              Nome do produto
+              <span className="label__required" aria-hidden>
+                *
+              </span>
+            </label>
+            <input
+              id="name"
+              className={`input${errors.name ? " input--error" : ""}`}
+              type="text"
+              autoComplete="off"
+              placeholder="Ex.: Cascata Natal 400 Leds"
+              value={product.name}
+              onChange={(e) => update("name", e.target.value)}
+              aria-invalid={Boolean(errors.name)}
+              aria-describedby={errors.name ? "err-name" : undefined}
+            />
+            {errors.name ? (
+              <p id="err-name" className="field__error">
+                {errors.name}
+              </p>
+            ) : null}
+          </div>
 
-      <div className="field">
-        <label className="label" htmlFor="originalPrice">
-          Preço original
-        </label>
-        <input
-          id="originalPrice"
-          className="input"
-          type="text"
-          inputMode="decimal"
-          placeholder="Opcional — ex.: 149,90"
-          value={product.originalPrice ?? ""}
-          onChange={(e) => update("originalPrice", e.target.value)}
-          aria-describedby="hint-original-price"
-        />
-        <p id="hint-original-price" className="helper">
-          Se for maior que o preço, as 5 variações incluem % OFF
-        </p>
-      </div>
+          <div className="field-row">
+            <div className="field">
+              <label className="label" htmlFor="price">
+                Preço
+                <span className="label__required" aria-hidden>
+                  *
+                </span>
+              </label>
+              <input
+                id="price"
+                className={`input${errors.price ? " input--error" : ""}`}
+                type="text"
+                inputMode="decimal"
+                placeholder="72,90"
+                value={product.price}
+                onChange={(e) => update("price", e.target.value)}
+                aria-invalid={Boolean(errors.price)}
+                aria-describedby={errors.price ? "err-price" : undefined}
+              />
+              {errors.price ? (
+                <p id="err-price" className="field__error">
+                  {errors.price}
+                </p>
+              ) : null}
+            </div>
 
-      <div className="toggle-row" role="group" aria-label="Benefícios do produto">
-        <label className="toggle">
-          <input
-            type="checkbox"
-            checked={product.freeShipping}
-            onChange={(e) => update("freeShipping", e.target.checked)}
-          />
-          <span className="toggle-control" aria-hidden />
-          <span className="toggle-text">Frete grátis</span>
-        </label>
-        <label className="toggle">
-          <input
-            type="checkbox"
-            checked={product.fastDelivery}
-            onChange={(e) => update("fastDelivery", e.target.checked)}
-          />
-          <span className="toggle-control" aria-hidden />
-          <span className="toggle-text">Entrega rápida</span>
-        </label>
-      </div>
+            <div className="field">
+              <label className="label" htmlFor="originalPrice">
+                Preço original
+              </label>
+              <input
+                id="originalPrice"
+                className="input"
+                type="text"
+                inputMode="decimal"
+                placeholder="Opcional"
+                value={product.originalPrice ?? ""}
+                onChange={(e) => update("originalPrice", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="toggle-row" role="group" aria-label="Benefícios do produto">
+            <label className="toggle">
+              <input
+                type="checkbox"
+                checked={product.freeShipping}
+                onChange={(e) => update("freeShipping", e.target.checked)}
+              />
+              <span className="toggle-control" aria-hidden />
+              <span className="toggle-text">Frete grátis</span>
+            </label>
+            <label className="toggle">
+              <input
+                type="checkbox"
+                checked={product.fastDelivery}
+                onChange={(e) => update("fastDelivery", e.target.checked)}
+              />
+              <span className="toggle-control" aria-hidden />
+              <span className="toggle-text">Entrega rápida</span>
+            </label>
+          </div>
+        </div>
+      ) : null}
 
       <div className="actions">
         <button
           type="submit"
-          className="btn btn-primary btn-block"
+          className={`btn btn-block ${
+            product.name.trim() && product.price.trim()
+              ? "btn-primary"
+              : "btn-secondary"
+          }`}
           disabled={busy}
           aria-busy={generating}
         >

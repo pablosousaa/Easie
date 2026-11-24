@@ -13,6 +13,8 @@ import {
 import { formatDatePt } from "@/lib/format";
 import { PostsAreaChart } from "./PostsAreaChart";
 
+type RangeDays = 7 | 30;
+
 export function ReportsApp() {
   const { cloud, pushStore } = useAuth();
   const store = useSyncExternalStore(
@@ -21,13 +23,14 @@ export function ReportsApp() {
     getServerSnapshot,
   );
   const [now, setNow] = useState<Date | null>(null);
+  const [rangeDays, setRangeDays] = useState<RangeDays>(7);
 
   useEffect(() => {
     setNow(new Date());
   }, []);
 
   const counts = now ? countPosted(store, now) : { today: 0, week: 0, total: 0 };
-  const days = now ? postsPerDay(store, 7, now) : [];
+  const days = now ? postsPerDay(store, rangeDays, now) : [];
   const totals = sumResults(store.products);
 
   const tracked = [...store.products].sort((a, b) =>
@@ -57,14 +60,42 @@ export function ReportsApp() {
       <header className="page-header">
         <h1 className="page-title">Relatórios</h1>
         <p className="page-sub">
-          Posts por dia e semana, e resultados manuais (cliques, vendas, comissão).
+          Posts por dia e resultados manuais (cliques, vendas, comissão)
         </p>
       </header>
 
       <section className="section" aria-labelledby="stats-heading">
-        <h2 id="stats-heading" className="section-title">
-          Postagens
-        </h2>
+        <div className="section-head">
+          <h2 id="stats-heading" className="section-title">
+            Postagens
+          </h2>
+          {now ? (
+            <div
+              className="segmented segmented--range"
+              role="radiogroup"
+              aria-label="Período do gráfico"
+            >
+              <button
+                type="button"
+                role="radio"
+                aria-checked={rangeDays === 7}
+                className={rangeDays === 7 ? "is-active" : undefined}
+                onClick={() => setRangeDays(7)}
+              >
+                7d
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={rangeDays === 30}
+                className={rangeDays === 30 ? "is-active" : undefined}
+                onClick={() => setRangeDays(30)}
+              >
+                30d
+              </button>
+            </div>
+          ) : null}
+        </div>
         {!now ? (
           <div className="surface stack-gap" aria-busy="true">
             <div className="skeleton skeleton--line" style={{ width: "30%" }} />
@@ -93,7 +124,7 @@ export function ReportsApp() {
             </div>
 
             <div className="surface posts-chart-surface" style={{ marginTop: 12 }}>
-              <PostsAreaChart days={days} />
+              <PostsAreaChart days={days} rangeDays={rangeDays} />
             </div>
           </>
         )}

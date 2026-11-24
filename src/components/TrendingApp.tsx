@@ -6,12 +6,12 @@ import { useSyncExternalStore } from "react";
 import {
   ExternalLink,
   EyeOff,
-  Filter,
   Package,
   RefreshCw,
   Search,
   Settings2,
 } from "lucide-react";
+import { EmptyState } from "./EmptyState";
 import { useToast } from "./ToastProvider";
 import { useAuth } from "./AuthProvider";
 import type { TrendingListResponse } from "@/lib/ml/types";
@@ -50,6 +50,13 @@ function formatUpdated(iso: string | null) {
   } catch {
     return iso;
   }
+}
+
+function sourceLabel(source: TrendingListResponse["source"]) {
+  if (source === "highlights") return "Highlights ML";
+  if (source === "search") return "Busca ML";
+  if (source === "mock") return "Demo (mock)";
+  return "Cache";
 }
 
 export function TrendingApp() {
@@ -94,7 +101,7 @@ export function TrendingApp() {
         const next = await load();
         if (!cancelled) setData(next);
       } catch {
-        if (!cancelled) showToast("Não foi possível carregar a lista.", "error");
+        if (!cancelled) showToast("Não foi possível carregar a lista", "error");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -124,12 +131,10 @@ export function TrendingApp() {
       const next = await load({ refresh: true });
       setData(next);
       showToast(
-        next.source === "mock"
-          ? "Lista atualizada (modo demo)."
-          : "Lista atualizada com dados do Mercado Livre.",
+        next.source === "mock" ? "Lista demo atualizada" : "Lista atualizada",
       );
     } catch {
-      showToast("Falha ao atualizar. Mantendo a última lista salva.", "error");
+      showToast("Falha ao atualizar", "error");
     } finally {
       setRefreshing(false);
     }
@@ -141,6 +146,7 @@ export function TrendingApp() {
       ? store.trendingHiddenIds.filter((id) => id !== mlItemId)
       : [...store.trendingHiddenIds, mlItemId];
     await persist({ ...store, trendingHiddenIds });
+    showToast(hidden ? "Produto visível de novo" : "Produto ocultado");
   }
 
   async function toggleCategory(mlCategoryId: string, enabled: boolean) {
@@ -150,7 +156,7 @@ export function TrendingApp() {
       body: JSON.stringify({ mlCategoryId, enabled }),
     });
     if (!res.ok) {
-      showToast("Não foi possível salvar a categoria.", "error");
+      showToast("Não foi possível salvar a categoria", "error");
       return;
     }
     const body = (await res.json()) as {
@@ -164,7 +170,7 @@ export function TrendingApp() {
     );
     const next = await load({ refresh: true });
     setData(next);
-    showToast(enabled ? "Categoria incluída. Lista atualizada." : "Categoria ocultada.");
+    showToast(enabled ? "Categoria incluída" : "Categoria ocultada");
   }
 
   function openClaim(item: Item) {
@@ -184,21 +190,21 @@ export function TrendingApp() {
     if (!claimItem) return;
     const link = affiliateLink.trim();
     if (!link) {
-      setClaimError("Cole o seu link de afiliado.");
+      setClaimError("Cole o seu link de afiliado");
       return;
     }
     try {
       const url = new URL(link);
       if (!["http:", "https:"].includes(url.protocol)) {
-        setClaimError("O link precisa começar com http ou https.");
+        setClaimError("O link precisa começar com http ou https");
         return;
       }
     } catch {
-      setClaimError("Link inválido. Cole a URL completa.");
+      setClaimError("Link inválido. Cole a URL completa");
       return;
     }
     if (!confirmPrice.trim()) {
-      setClaimError("Confirme o preço de referência.");
+      setClaimError("Confirme o preço de referência");
       return;
     }
 
@@ -219,42 +225,47 @@ export function TrendingApp() {
     let next = upsertLastProduct(store, draft);
     next = { ...next, trendingTakenIds };
     await persist(next);
-    showToast("Produto preenchido. Gere o texto na próxima tela.");
+    showToast("Produto pronto em Gerar");
     setClaimItem(null);
     router.push("/gerar");
   }
 
   const enabledCats = data?.categories.filter((c) => c.enabled) ?? [];
+  const isMock = data?.source === "mock";
 
   return (
     <div className="page">
       <header className="page-header">
         <h1 className="page-title">Pegar produtos</h1>
         <p className="page-sub">
-          Sugestões dos mais vendidos no Mercado Livre. O preço é de referência — confira
-          antes de postar. O link de afiliado é o seu.
+          Mais vendidos no ML. Preço é referência — o link de afiliado é o seu
         </p>
       </header>
 
-      {data?.warning ? (
+      {isMock ? (
+        <p className="source-banner source-banner--mock" role="status">
+          Lista demo (mock) — sem tokens ML nesta sessão. Use só como referência
+        </p>
+      ) : null}
+
+      {data?.warning && !isMock ? (
         <p className="warn-banner" role="status">
           {data.warning}
           {data.lastUpdatedAt
-            ? ` Última lista salva: ${formatUpdated(data.lastUpdatedAt)}.`
+            ? ` Última lista: ${formatUpdated(data.lastUpdatedAt)}.`
             : null}
         </p>
       ) : null}
 
-      <section className="section surface" aria-label="Filtros">
-        <div className="trending-toolbar">
-          <label className="field trending-toolbar__search">
-            <span className="label">
-              <Search size={14} strokeWidth={1.5} aria-hidden /> Buscar
-            </span>
+      <section className="section" aria-label="Filtros">
+        <div className="trending-filters">
+          <label className="trending-filters__search">
+            <span className="sr-only">Buscar</span>
+            <Search size={16} strokeWidth={1.5} aria-hidden />
             <input
               className="input"
               type="search"
-              placeholder="Nome do produto"
+              placeholder="Buscar produto"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
@@ -265,75 +276,81 @@ export function TrendingApp() {
               }}
             />
           </label>
-          <label className="field">
-            <span className="label">
-              <Filter size={14} strokeWidth={1.5} aria-hidden /> Categoria
-            </span>
-            <select
-              className="input"
-              value={category}
-              onChange={(e) => {
-                const v = e.target.value;
-                setCategory(v);
-                void load({ cat: v }).then(setData).catch(() => undefined);
-              }}
+
+          {enabledCats.length > 0 ? (
+            <div
+              className="chip-row chip-row--filter"
+              role="group"
+              aria-label="Categoria"
             >
-              <option value="">Todas</option>
-              {enabledCats.map((c) => (
-                <option key={c.mlCategoryId} value={c.mlCategoryId}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
+              <button
+                type="button"
+                className={`chip${!category ? " is-active" : ""}`}
+                aria-pressed={!category}
+                onClick={() => {
+                  setCategory("");
+                  void load({ cat: "" }).then(setData).catch(() => undefined);
+                }}
+              >
+                Todas
+              </button>
+              {enabledCats.map((c) => {
+                const selected = category === c.mlCategoryId;
+                return (
+                  <button
+                    key={c.mlCategoryId}
+                    type="button"
+                    className={`chip${selected ? " is-active" : ""}`}
+                    aria-pressed={selected}
+                    onClick={() => {
+                      const next = selected ? "" : c.mlCategoryId;
+                      setCategory(next);
+                      void load({ cat: next }).then(setData).catch(() => undefined);
+                    }}
+                  >
+                    {c.name}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
+          <div className="trending-filters__actions">
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => void handleRefresh()}
+              disabled={refreshing}
+            >
+              <RefreshCw size={16} strokeWidth={1.5} aria-hidden />
+              {refreshing ? "Atualizando…" : "Atualizar"}
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => setShowHidden((v) => !v)}
+            >
+              <EyeOff size={16} strokeWidth={1.5} aria-hidden />
+              {showHidden ? "Ocultar ignorados" : "Ignorados"}
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => setShowCats((v) => !v)}
+            >
+              <Settings2 size={16} strokeWidth={1.5} aria-hidden />
+              Categorias
+            </button>
+          </div>
+
+          {data ? (
+            <p className="helper trending-filters__meta">
+              {sourceLabel(data.source)} ·{" "}
+              {data.cadence === "daily" ? "diária" : "semanal"} ·{" "}
+              {formatUpdated(data.lastUpdatedAt)}
+            </p>
+          ) : null}
         </div>
-        <div className="trending-toolbar__actions">
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            onClick={() => void load({ q: query, cat: category }).then(setData)}
-          >
-            Aplicar filtros
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            onClick={() => void handleRefresh()}
-            disabled={refreshing}
-          >
-            <RefreshCw size={16} strokeWidth={1.5} aria-hidden />
-            {refreshing ? "Atualizando…" : "Atualizar lista"}
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => setShowHidden((v) => !v)}
-          >
-            <EyeOff size={16} strokeWidth={1.5} aria-hidden />
-            {showHidden ? "Ocultar ignorados" : "Ver ignorados"}
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => setShowCats((v) => !v)}
-          >
-            <Settings2 size={16} strokeWidth={1.5} aria-hidden />
-            Categorias
-          </button>
-        </div>
-        {data ? (
-          <p className="helper" style={{ marginTop: 12 }}>
-            Atualização {data.cadence === "daily" ? "diária" : "semanal"} · fonte{" "}
-            {data.source === "highlights"
-              ? "Highlights ML"
-              : data.source === "search"
-                ? "busca ML"
-                : data.source === "mock"
-                  ? "demo"
-                  : "cache"}{" "}
-            · {formatUpdated(data.lastUpdatedAt)}
-          </p>
-        ) : null}
       </section>
 
       {showCats && data ? (
@@ -365,64 +382,63 @@ export function TrendingApp() {
 
       <section className="section" aria-live="polite">
         {loading ? (
-          <p className="empty">Carregando produtos em alta…</p>
+          <p className="empty">Carregando produtos…</p>
         ) : visibleItems.length === 0 ? (
-          <p className="empty">Nenhum produto nesta filtragem.</p>
+          <EmptyState title="Nenhum produto nesta filtragem">
+            <p className="helper">Ajuste a busca ou a categoria</p>
+          </EmptyState>
         ) : (
-          <ul className="entity-list trending-list">
+          <ul className="feed-list">
             {visibleItems.map((item) => {
               const taken = store.trendingTakenIds.includes(item.mlItemId);
               const hidden = store.trendingHiddenIds.includes(item.mlItemId);
               return (
                 <li
                   key={item.id}
-                  className={`entity-card entity-card--stack trending-card${hidden ? " entity-card--muted" : ""}`}
+                  className={`feed-row${hidden ? " feed-row--muted" : ""}`}
                 >
-                  <div className="trending-card__top">
-                    <div className="trending-card__media" aria-hidden>
-                      {item.thumbnail ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={item.thumbnail} alt="" width={72} height={72} />
-                      ) : (
-                        <Package size={28} strokeWidth={1.5} />
-                      )}
-                    </div>
-                    <div className="entity-card__body">
-                      <div className="entity-card__title-row">
-                        <span className="badge">#{item.rank}</span>
-                        {taken ? <span className="badge badge--muted">Já peguei</span> : null}
-                        <span className="badge badge--muted">{item.categoryName}</span>
-                      </div>
-                      <h3 className="entity-card__title">{item.name}</h3>
-                      <p className="trending-card__price">
-                        {formatMoney(item.price, item.currency)}
-                        <span className="helper"> · referência — confira no ML</span>
-                      </p>
-                    </div>
+                  <div className="feed-row__media" aria-hidden>
+                    {item.thumbnail ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.thumbnail} alt="" width={64} height={64} />
+                    ) : (
+                      <Package size={24} strokeWidth={1.5} />
+                    )}
                   </div>
-                  <div className="trending-card__actions">
-                    <a
-                      className="btn btn-secondary btn-sm"
-                      href={item.permalink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Abrir no ML
-                      <ExternalLink size={14} strokeWidth={1.5} aria-hidden />
-                    </a>
+                  <div className="feed-row__body">
+                    <div className="feed-row__meta">
+                      <span className="feed-row__rank">#{item.rank}</span>
+                      {taken ? <span className="badge badge--muted">Já peguei</span> : null}
+                      <span className="helper">{item.categoryName}</span>
+                    </div>
+                    <h3 className="feed-row__title">{item.name}</h3>
+                    <p className="feed-row__price">
+                      {formatMoney(item.price, item.currency)}
+                    </p>
+                  </div>
+                  <div className="feed-row__actions">
                     <button
                       type="button"
                       className="btn btn-primary btn-sm"
                       onClick={() => openClaim(item)}
                     >
-                      Usar este
+                      Usar
                     </button>
+                    <a
+                      className="icon-btn"
+                      href={item.permalink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Abrir no Mercado Livre"
+                    >
+                      <ExternalLink size={18} strokeWidth={1.5} aria-hidden />
+                    </a>
                     <button
                       type="button"
                       className="btn btn-ghost btn-sm"
                       onClick={() => void toggleHide(item.mlItemId)}
                     >
-                      {hidden ? "Mostrar de novo" : "Não interessa"}
+                      {hidden ? "Mostrar" : "Ignorar"}
                     </button>
                   </div>
                 </li>
@@ -442,18 +458,17 @@ export function TrendingApp() {
           />
           <form className="trending-modal__panel surface" onSubmit={submitClaim}>
             <h2 id="claim-title" className="section-title">
-              Gerar seu link de afiliado
+              Seu link de afiliado
             </h2>
             <p className="page-sub">
-              Abra o produto no Mercado Livre, copie o seu link de afiliado, cole aqui e
-              confira o preço.
+              Abra no ML, copie o link de afiliado, cole aqui e confira o preço
             </p>
             <p className="helper" style={{ marginTop: 12 }}>
               {claimItem.name}
             </p>
             <div className="field" style={{ marginTop: 16 }}>
               <label className="label" htmlFor="claim-link">
-                Seu link de afiliado
+                Link de afiliado
                 <span className="label__required" aria-hidden>
                   *
                 </span>
@@ -498,7 +513,7 @@ export function TrendingApp() {
                 Abrir no ML
               </a>
               <button type="submit" className="btn btn-primary">
-                Continuar para gerar texto
+                Continuar
               </button>
             </div>
             <button
