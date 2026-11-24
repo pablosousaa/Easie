@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Instrument_Sans, Space_Mono } from "next/font/googl
 import { AuthProvider } from "@/components/AuthProvider";
 import { ToastProvider } from "@/components/ToastProvider";
 import "./globals.css";
+import "./auth-starfield.css";
 
 const instrumentSans = Instrument_Sans({
   variable: "--font-instrument",
