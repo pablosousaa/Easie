@@ -2,9 +2,9 @@
 export function AuthStarfield() {
   return (
     <div className="auth-starfield" aria-hidden="true">
-      <div className="auth-starfield__layer auth-starfield__layer--1" />
-      <div className="auth-starfield__layer auth-starfield__layer--2" />
-      <div className="auth-starfield__layer auth-starfield__layer--3" />
+      <div className="auth-starfield__stars" />
+      <div className="auth-starfield__stars--2" />
+      <div className="auth-starfield__stars--3" />
     </div>
   );
 }
