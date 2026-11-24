@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "npx --yes tsx --test src/lib/discount.test.ts",
     "user:create": "npx --yes tsx scripts/create-user.ts",
     "groups:seed": "npx --yes tsx scripts/seed-fc-groups.ts",
     "db:push": "drizzle-kit push",

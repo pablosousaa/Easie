@@ -28,9 +28,12 @@ const STATEMENTS = [
   clicks INTEGER NOT NULL DEFAULT 0,
   sales INTEGER NOT NULL DEFAULT 0,
   commission TEXT NOT NULL DEFAULT '',
-  category TEXT NOT NULL DEFAULT ''
+  category TEXT NOT NULL DEFAULT '',
+  original_price TEXT NOT NULL DEFAULT ''
 )`,
   `CREATE INDEX IF NOT EXISTS products_user_idx ON products(user_id)`,
+  // Additive migrate for existing Neon DBs created before original_price
+  `ALTER TABLE products ADD COLUMN IF NOT EXISTS original_price TEXT NOT NULL DEFAULT ''`,
   `CREATE TABLE IF NOT EXISTS templates (
   id TEXT PRIMARY KEY NOT NULL,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

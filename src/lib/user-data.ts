@@ -28,6 +28,7 @@ function mapProduct(row: ProductRow): Product {
     affiliateLink: row.affiliate_link,
     name: row.name,
     price: row.price,
+    originalPrice: row.original_price ?? "",
     freeShipping: Boolean(row.free_shipping),
     fastDelivery: Boolean(row.fast_delivery),
     category: row.category ?? "",
@@ -427,15 +428,16 @@ export async function migrateLocalData(
       if (exists) continue;
       await sqlRun(
         `INSERT INTO products (
-           id, user_id, affiliate_link, name, price, free_shipping, fast_delivery,
+           id, user_id, affiliate_link, name, price, original_price, free_shipping, fast_delivery,
            status, queue_order, created_at, completed_at, clicks, sales, commission, category
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           userId,
           p.affiliateLink,
           p.name,
           p.price,
+          p.originalPrice ?? "",
           p.freeShipping ? 1 : 0,
           p.fastDelivery ? 1 : 0,
           p.status ?? "queued",
@@ -488,15 +490,16 @@ export async function migrateLocalData(
     const lp = payload.lastProduct;
     await sqlRun(
       `INSERT INTO products (
-         id, user_id, affiliate_link, name, price, free_shipping, fast_delivery,
+         id, user_id, affiliate_link, name, price, original_price, free_shipping, fast_delivery,
          status, queue_order, created_at, completed_at, clicks, sales, commission, category
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', 0, ?, NULL, 0, 0, '', ?)`,
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', 0, ?, NULL, 0, 0, '', ?)`,
       [
         createId("prd"),
         userId,
         lp.affiliateLink,
         lp.name,
         lp.price,
+        lp.originalPrice ?? "",
         lp.freeShipping ? 1 : 0,
         lp.fastDelivery ? 1 : 0,
         nowIso(),
@@ -578,15 +581,16 @@ export async function replaceUserStore(
   for (const p of store.products) {
     await sqlRun(
       `INSERT INTO products (
-         id, user_id, affiliate_link, name, price, free_shipping, fast_delivery,
+         id, user_id, affiliate_link, name, price, original_price, free_shipping, fast_delivery,
          status, queue_order, created_at, completed_at, clicks, sales, commission, category
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         p.id,
         userId,
         p.affiliateLink,
         p.name,
         p.price,
+        p.originalPrice ?? "",
         p.freeShipping ? 1 : 0,
         p.fastDelivery ? 1 : 0,
         p.status,

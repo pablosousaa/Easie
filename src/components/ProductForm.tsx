@@ -36,6 +36,7 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
   const { showToast } = useToast();
   const [product, setProduct] = useState<ProductDraft>({
     ...initial,
+    originalPrice: initial.originalPrice ?? "",
     category: initial.category ?? "",
   });
   const [errors, setErrors] = useState<Errors>({});
@@ -69,6 +70,7 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
       const data = (await res.json()) as {
         name?: string;
         price?: string;
+        originalPrice?: string;
         freeShipping?: boolean;
         warning?: string | null;
         error?: string;
@@ -81,6 +83,10 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
         ...prev,
         name: data.name?.trim() || prev.name,
         price: data.price?.trim() || prev.price,
+        originalPrice:
+          data.originalPrice !== undefined
+            ? data.originalPrice.trim()
+            : prev.originalPrice,
         freeShipping: data.freeShipping ?? prev.freeShipping,
       }));
       if (data.warning) showToast(data.warning);
@@ -194,6 +200,25 @@ export function ProductForm({ initial, onGenerate, generating = false }: Props) 
             {errors.price}
           </p>
         ) : null}
+      </div>
+
+      <div className="field">
+        <label className="label" htmlFor="originalPrice">
+          Preço original
+        </label>
+        <input
+          id="originalPrice"
+          className="input"
+          type="text"
+          inputMode="decimal"
+          placeholder="Opcional — ex.: 149,90"
+          value={product.originalPrice ?? ""}
+          onChange={(e) => update("originalPrice", e.target.value)}
+          aria-describedby="hint-original-price"
+        />
+        <p id="hint-original-price" className="helper">
+          Se for maior que o preço, as 5 variações incluem % OFF
+        </p>
       </div>
 
       <div className="toggle-row" role="group" aria-label="Benefícios do produto">

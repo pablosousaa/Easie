@@ -1,6 +1,8 @@
 export type LinkLookupResult = {
   name: string;
   price: string;
+  /** List/original price when ML reports a sale; empty otherwise. */
+  originalPrice: string;
   freeShipping: boolean;
   category: string;
   source: "api" | "html" | "slug" | "none";
@@ -95,13 +97,20 @@ async function fetchItem(id: string): Promise<LinkLookupResult | null> {
     const item = (await res.json()) as {
       title?: string;
       price?: number;
+      original_price?: number | null;
       permalink?: string;
       shipping?: { free_shipping?: boolean };
     };
     if (!item.title) return null;
+    const price = typeof item.price === "number" ? item.price : null;
+    const original =
+      typeof item.original_price === "number" ? item.original_price : null;
+    const hasDiscount =
+      price != null && original != null && original > price;
     return {
       name: item.title,
-      price: typeof item.price === "number" ? formatPrice(item.price) : "",
+      price: price != null ? formatPrice(price) : "",
+      originalPrice: hasDiscount ? formatPrice(original) : "",
       freeShipping: Boolean(item.shipping?.free_shipping),
       category: guessCategoryFromTitle(item.title),
       source: "api",
@@ -141,19 +150,35 @@ async function scrapeOg(url: string): Promise<LinkLookupResult | null> {
     const priceRaw =
       html.match(/property="product:price:amount"\s+content="([^"]+)"/i)?.[1] ||
       html.match(/"price"\s*:\s*"?([\d.,]+)"?/i)?.[1];
+    const originalRaw =
+      html.match(/"original_price"\s*:\s*"?([\d.]+)"?/i)?.[1] ||
+      html.match(/"was_price"\s*:\s*"?([\d.]+)"?/i)?.[1] ||
+      html.match(/"list_price"\s*:\s*"?([\d.]+)"?/i)?.[1];
     if (!title) return null;
     const decoded = title
       .replace(/&amp;/g, "&")
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'");
     let price = "";
+    let priceNum: number | null = null;
     if (priceRaw) {
       const num = Number.parseFloat(priceRaw.replace(",", "."));
-      if (Number.isFinite(num)) price = formatPrice(num);
+      if (Number.isFinite(num)) {
+        price = formatPrice(num);
+        priceNum = num;
+      }
+    }
+    let originalPrice = "";
+    if (originalRaw) {
+      const orig = Number.parseFloat(originalRaw.replace(",", "."));
+      if (Number.isFinite(orig) && priceNum != null && orig > priceNum) {
+        originalPrice = formatPrice(orig);
+      }
     }
     return {
       name: decoded,
       price,
+      originalPrice,
       freeShipping: /frete gr[aá]tis/i.test(html),
       category: guessCategoryFromTitle(decoded),
       source: "html",
@@ -171,6 +196,7 @@ export async function lookupFromAffiliateLink(rawUrl: string): Promise<LinkLooku
     return {
       name: "",
       price: "",
+      originalPrice: "",
       freeShipping: false,
       category: "",
       source: "none",
@@ -200,6 +226,7 @@ export async function lookupFromAffiliateLink(rawUrl: string): Promise<LinkLooku
     return {
       name: slugName,
       price: "",
+      originalPrice: "",
       freeShipping: false,
       category: guessCategoryFromTitle(slugName),
       source: "slug",
@@ -212,6 +239,7 @@ export async function lookupFromAffiliateLink(rawUrl: string): Promise<LinkLooku
   return {
     name: "",
     price: "",
+    originalPrice: "",
     freeShipping: false,
     category: "",
     source: "none",

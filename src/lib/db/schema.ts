@@ -35,6 +35,7 @@ export const products = pgTable(
     affiliateLink: text("affiliate_link").notNull(),
     name: text("name").notNull(),
     price: text("price").notNull(),
+    originalPrice: text("original_price").notNull().default(""),
     freeShipping: integer("free_shipping").notNull().default(0),
     fastDelivery: integer("fast_delivery").notNull().default(0),
     status: text("status").notNull().default("draft"),

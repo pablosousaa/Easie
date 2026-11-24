@@ -17,6 +17,7 @@ export type ProductRow = {
   affiliate_link: string;
   name: string;
   price: string;
+  original_price: string;
   free_shipping: number;
   fast_delivery: number;
   status: ProductStatus;

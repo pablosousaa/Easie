@@ -5,13 +5,21 @@ const DEFAULT_TEMPLATE_UPDATED_AT = "2026-01-01T00:00:00.000Z";
 
 /**
  * Five announcement models from docs/templates-anuncios.txt.
- * Placeholders: {{nome}} / {{preco}} / {{link}} (also [PRODUTO] / [PREÇO] / [LINK]).
+ * Placeholders: {{nome}} / {{preco}} / {{link}} / {{desconto}}
+ * (also [PRODUTO] / [PREÇO] / [LINK] / [DESCONTO]).
  * Frete / entrega follow product toggles via {{frete}} / {{entrega}}.
+ * {{desconto}} is filled per variation with a distinct % OFF line (empty when none).
  */
 export const AD_TEMPLATE_DEFS = [
   {
     name: "OFERTA IMPERDÍVEL",
-    content: `🔥 ACHEI! {{nome}} por um preço ABSURDO!
+    content: `🔥 ACHEI! {{desconto}}
+
+💰 Por apenas: {{preco}} 🚚 {{frete}} · 📦 {{entrega}} ⚠️ Só enquanto durar!
+
+🛒 Veja aqui 👉 {{link}}`,
+    /** Fallback first line when there is no discount %. */
+    contentNoDiscount: `🔥 ACHEI! {{nome}} por um preço ABSURDO!
 
 💰 Por apenas: {{preco}} 🚚 {{frete}} · 📦 {{entrega}} ⚠️ Só enquanto durar!
 
@@ -20,6 +28,15 @@ export const AD_TEMPLATE_DEFS = [
   {
     name: "ACHADINHO DO DIA",
     content: `🤯 OLHA O QUE EU ENCONTREI!
+
+{{desconto}}
+
+{{nome}} por apenas {{preco}}! 😍
+
+🔥 É aquela oportunidade que não dá pra perder! 🚚 {{frete}} · 📦 {{entrega}}
+
+👇 Confira aqui 👉 {{link}}`,
+    contentNoDiscount: `🤯 OLHA O QUE EU ENCONTREI!
 
 {{nome}} por apenas {{preco}}! 😍
 
@@ -30,6 +47,14 @@ export const AD_TEMPLATE_DEFS = [
   {
     name: "ALERTA DE OFERTA",
     content: `🚨 ATENÇÃO! OFERTA ENCONTRADA!
+
+🔥 {{nome}} por apenas {{preco}}!
+
+💥 {{desconto}}! 🚚 {{frete}} · 📦 {{entrega}}
+⏳ Corre antes que acabe!
+
+🛍️ Compre aqui 👉 {{link}}`,
+    contentNoDiscount: `🚨 ATENÇÃO! OFERTA ENCONTRADA!
 
 🔥 {{nome}} por apenas {{preco}}!
 
@@ -44,6 +69,13 @@ export const AD_TEMPLATE_DEFS = [
 
 {{nome}} com um preço de cair o queixo!
 
+💰 Apenas: {{preco}} ✨ {{desconto}}! 🚚 {{frete}} · 📦 {{entrega}}
+
+👉 Confira agora: {{link}}`,
+    contentNoDiscount: `😍 VOCÊ PRECISA VER ISSO!
+
+{{nome}} com um preço de cair o queixo!
+
 💰 Apenas: {{preco}} ✨ Uma oportunidade que vale a pena aproveitar! 🚚 {{frete}} · 📦 {{entrega}}
 
 👉 Confira agora: {{link}}`,
@@ -51,6 +83,15 @@ export const AD_TEMPLATE_DEFS = [
   {
     name: "PREÇO ABSURDO",
     content: `💥 QUE PREÇO É ESSE?!
+
+🔥 {{nome}} por apenas {{preco}}!
+
+🤩 {{desconto}}! 📦 {{entrega}} · 🚚 {{frete}}
+
+⚠️ Aproveite enquanto está disponível!
+
+👇 GARANTA O SEU 👉 {{link}}`,
+    contentNoDiscount: `💥 QUE PREÇO É ESSE?!
 
 🔥 {{nome}} por apenas {{preco}}!
 
@@ -69,7 +110,7 @@ export function hasCanonicalAdTemplates(templates: TextTemplate[]): boolean {
   return AD_TEMPLATE_DEFS.every((d) => names.has(d.name));
 }
 
-export const DEFAULT_TEMPLATE_CONTENT = AD_TEMPLATE_DEFS[0].content;
+export const DEFAULT_TEMPLATE_CONTENT = AD_TEMPLATE_DEFS[0].contentNoDiscount;
 
 export function createAdTemplates(
   idForIndex?: (index: number) => string,
@@ -77,7 +118,8 @@ export function createAdTemplates(
   return AD_TEMPLATE_DEFS.map((def, index) => ({
     id: idForIndex?.(index) ?? `tpl-ad-${index + 1}`,
     name: def.name,
-    content: def.content,
+    // Modelos editor shows the no-discount baseline; Gerar picks discount branch at runtime.
+    content: def.contentNoDiscount,
     isDefault: index === 0,
     updatedAt: DEFAULT_TEMPLATE_UPDATED_AT,
     category: "",

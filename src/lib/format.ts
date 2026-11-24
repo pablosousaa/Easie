@@ -5,6 +5,7 @@ export function emptyProduct(): ProductDraft {
     affiliateLink: "",
     name: "",
     price: "",
+    originalPrice: "",
     freeShipping: false,
     fastDelivery: false,
     category: "",
