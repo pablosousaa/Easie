@@ -143,8 +143,8 @@ export function GeneratorApp() {
           Produto
         </h2>
         <ProductForm
-          key={`${initial.name}|${initial.affiliateLink}|${initial.price}`}
-          initial={initial}
+          key={`${initial.name}|${initial.affiliateLink}|${initial.price}|${initial.originalPrice ?? ""}`}
+          initial={{ ...initial, originalPrice: initial.originalPrice ?? "" }}
           onGenerate={handleGenerate}
           generating={generating}
         />

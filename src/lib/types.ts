@@ -2,6 +2,8 @@ export type ProductDraft = {
   affiliateLink: string;
   name: string;
   price: string;
+  /** List/original price when on sale; empty = no discount callout. */
+  originalPrice: string;
   freeShipping: boolean;
   fastDelivery: boolean;
   /** Product category id (RF04 / RF12), empty = Geral. */
@@ -105,6 +107,7 @@ export type MigratePayload = {
 export const TEMPLATE_VARIABLES = [
   { key: "{{nome}}", label: "Nome do produto (ou [PRODUTO])" },
   { key: "{{preco}}", label: "Preço (ou [PREÇO])" },
+  { key: "{{desconto}}", label: "Callout de % OFF (ou [DESCONTO])" },
   { key: "{{link}}", label: "Link de afiliado (ou [LINK])" },
   { key: "{{frete}}", label: "Frete (grátis ou vazio)" },
   { key: "{{entrega}}", label: "Entrega rápida (ou vazio)" },

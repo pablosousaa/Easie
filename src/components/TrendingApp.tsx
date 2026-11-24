@@ -206,6 +206,7 @@ export function TrendingApp() {
       affiliateLink: link,
       name: claimItem.name,
       price: confirmPrice.trim(),
+      originalPrice: "",
       freeShipping: claimItem.freeShipping,
       fastDelivery: false,
       category: "",

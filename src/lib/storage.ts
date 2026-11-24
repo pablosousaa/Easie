@@ -60,6 +60,7 @@ function asDraft(value: unknown): ProductDraft | null {
     affiliateLink: p.affiliateLink,
     name: p.name,
     price: typeof p.price === "string" ? p.price : "",
+    originalPrice: typeof p.originalPrice === "string" ? p.originalPrice : "",
     freeShipping: Boolean(p.freeShipping),
     fastDelivery: Boolean(p.fastDelivery),
     category: typeof p.category === "string" ? p.category : "",
@@ -95,6 +96,8 @@ function normalize(parsed: Partial<EasieStore>): EasieStore {
     ? (parsed.products as Product[]).map((p) => ({
         ...EMPTY_RESULTS,
         ...p,
+        originalPrice:
+          typeof p.originalPrice === "string" ? p.originalPrice : "",
         category: typeof p.category === "string" ? p.category : "",
         clicks: Number.isFinite(p.clicks) ? p.clicks : 0,
         sales: Number.isFinite(p.sales) ? p.sales : 0,

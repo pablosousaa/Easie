@@ -33,7 +33,7 @@ export function TemplatesApp({ variant = "page", onClose }: Props) {
   }
 
   const sub =
-    "Edite e salve os modelos da conta. Gerar sempre usa os 5 anúncios canônicos (OFERTA IMPERDÍVEL … PREÇO ABSURDO) — edições aqui não sobrescrevem essas variações. Variáveis: {{nome}} / {{preco}} / {{link}} ou [PRODUTO] / [PREÇO] / [LINK].";
+    "Edite e salve os modelos da conta. Gerar sempre usa os 5 anúncios canônicos (OFERTA IMPERDÍVEL … PREÇO ABSURDO) — edições aqui não sobrescrevem essas variações. Variáveis: {{nome}} / {{preco}} / {{desconto}} / {{link}} ou [PRODUTO] / [PREÇO] / [DESCONTO] / [LINK].";
 
   const editor = (
     <section

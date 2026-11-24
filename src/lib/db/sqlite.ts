@@ -35,6 +35,7 @@ function ensureSchema(sqlite: DatabaseSync) {
       affiliate_link TEXT NOT NULL,
       name TEXT NOT NULL,
       price TEXT NOT NULL,
+      original_price TEXT NOT NULL DEFAULT '',
       free_shipping INTEGER NOT NULL DEFAULT 0,
       fast_delivery INTEGER NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'draft',
@@ -139,6 +140,11 @@ function migrateSchema(sqlite: DatabaseSync) {
   }
   if (!names.has("category")) {
     sqlite.exec("ALTER TABLE products ADD COLUMN category TEXT NOT NULL DEFAULT ''");
+  }
+  if (!names.has("original_price")) {
+    sqlite.exec(
+      "ALTER TABLE products ADD COLUMN original_price TEXT NOT NULL DEFAULT ''",
+    );
   }
 
   const tplCols = sqlite
