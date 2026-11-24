@@ -13,6 +13,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useAuth } from "./AuthProvider";
+import { AuthStarfield } from "./AuthStarfield";
 import { useToast } from "./ToastProvider";
 import {
   downloadTextFile,
@@ -158,106 +159,118 @@ function AccountAppInner() {
 
   if (guest || loading) {
     return (
-      <div className="page page--auth">
-        <header className="auth-hero">
-          <h1 className="auth-hero__brand" aria-label="Easie">
-            Easie<span className="auth-hero__dot">.</span>
-          </h1>
-        </header>
+      <>
+        <AuthStarfield />
+        <div className="page page--auth">
+          <header className="auth-hero">
+            <h1 className="auth-hero__brand" aria-label="Easie">
+              Easie<span className="auth-hero__dot">.</span>
+            </h1>
+          </header>
 
-        <section className="section" aria-labelledby="login-heading">
-          {loading ? (
-            <div
-              className="surface stack-gap"
-              aria-busy="true"
-              aria-live="polite"
-            >
-              <div className="skeleton skeleton--line" style={{ width: "40%" }} />
-              <div className="skeleton skeleton--line" style={{ width: "70%" }} />
-              <div className="skeleton skeleton--btn" />
-              <span className="sr-only">Carregando sessão</span>
-            </div>
-          ) : (
-            <div className="surface auth-card">
-              <div className="callout callout--next" style={{ marginBottom: 16 }}>
-                <div className="callout__body">
-                  <p className="callout__title" id="login-heading">
-                    Acesso restrito
-                  </p>
-                  <p className="helper">
-                    Não há cadastro público. Peça uma conta ao administrador do
-                    Easie.
-                  </p>
-                </div>
+          <section className="section" aria-labelledby="login-heading">
+            {loading ? (
+              <div
+                className="surface stack-gap"
+                aria-busy="true"
+                aria-live="polite"
+              >
+                <div
+                  className="skeleton skeleton--line"
+                  style={{ width: "40%" }}
+                />
+                <div
+                  className="skeleton skeleton--line"
+                  style={{ width: "70%" }}
+                />
+                <div className="skeleton skeleton--btn" />
+                <span className="sr-only">Carregando sessão</span>
               </div>
-
-              <form className="stack-gap auth-form" onSubmit={handleAuth}>
-                <div className="field">
-                  <label className="label" htmlFor="acc-username">
-                    Usuário
-                  </label>
-                  <input
-                    id="acc-username"
-                    className="input"
-                    type="text"
-                    autoComplete="username"
-                    inputMode="text"
-                    spellCheck={false}
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                    minLength={2}
-                    maxLength={32}
-                    disabled={busy}
-                    autoFocus
-                  />
-                </div>
-                <div className="field">
-                  <label className="label" htmlFor="acc-password">
-                    Senha
-                  </label>
-                  <input
-                    id="acc-password"
-                    className={`input${error ? " input--error" : ""}`}
-                    type="password"
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    disabled={busy}
-                    aria-invalid={Boolean(error)}
-                    aria-describedby={error ? "acc-error" : "acc-hint"}
-                  />
-                </div>
-                {error ? (
-                  <p id="acc-error" className="field__error" role="alert">
-                    {error}
-                  </p>
-                ) : (
-                  <p id="acc-hint" className="helper">
-                    Depois do login você vai para o workspace. Dados ficam na
-                    nuvem, só na sua conta.
-                  </p>
-                )}
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-block"
-                  disabled={busy}
-                  aria-busy={busy}
+            ) : (
+              <div className="surface auth-card">
+                <div
+                  className="callout callout--next"
+                  style={{ marginBottom: 16 }}
                 >
-                  {busy ? (
-                    <Loader2 size={18} className="spin" aria-hidden />
+                  <div className="callout__body">
+                    <p className="callout__title" id="login-heading">
+                      Acesso restrito
+                    </p>
+                    <p className="helper">
+                      Não há cadastro público. Peça uma conta ao administrador
+                      do Easie.
+                    </p>
+                  </div>
+                </div>
+
+                <form className="stack-gap auth-form" onSubmit={handleAuth}>
+                  <div className="field">
+                    <label className="label" htmlFor="acc-username">
+                      Usuário
+                    </label>
+                    <input
+                      id="acc-username"
+                      className="input"
+                      type="text"
+                      autoComplete="username"
+                      inputMode="text"
+                      spellCheck={false}
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      required
+                      minLength={2}
+                      maxLength={32}
+                      disabled={busy}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="field">
+                    <label className="label" htmlFor="acc-password">
+                      Senha
+                    </label>
+                    <input
+                      id="acc-password"
+                      className={`input${error ? " input--error" : ""}`}
+                      type="password"
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      disabled={busy}
+                      aria-invalid={Boolean(error)}
+                      aria-describedby={error ? "acc-error" : "acc-hint"}
+                    />
+                  </div>
+                  {error ? (
+                    <p id="acc-error" className="field__error" role="alert">
+                      {error}
+                    </p>
                   ) : (
-                    <LogIn size={18} aria-hidden />
+                    <p id="acc-hint" className="helper">
+                      Depois do login você vai para o workspace. Dados ficam na
+                      nuvem, só na sua conta.
+                    </p>
                   )}
-                  {busy ? "Aguarde…" : "Entrar"}
-                </button>
-              </form>
-            </div>
-          )}
-        </section>
-      </div>
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-block"
+                    disabled={busy}
+                    aria-busy={busy}
+                  >
+                    {busy ? (
+                      <Loader2 size={18} className="spin" aria-hidden />
+                    ) : (
+                      <LogIn size={18} aria-hidden />
+                    )}
+                    {busy ? "Aguarde…" : "Entrar"}
+                  </button>
+                </form>
+              </div>
+            )}
+          </section>
+        </div>
+      </>
     );
   }
 
@@ -418,17 +431,23 @@ export function AccountApp() {
   return (
     <Suspense
       fallback={
-        <div className="page page--auth">
-          <header className="auth-hero">
-            <p className="auth-hero__brand" aria-hidden>
-              Easie<span className="auth-hero__dot">.</span>
-            </p>
-          </header>
-          <div className="surface stack-gap" aria-busy="true">
-            <div className="skeleton skeleton--line" style={{ width: "40%" }} />
-            <div className="skeleton skeleton--btn" />
+        <>
+          <AuthStarfield />
+          <div className="page page--auth">
+            <header className="auth-hero">
+              <p className="auth-hero__brand" aria-hidden>
+                Easie<span className="auth-hero__dot">.</span>
+              </p>
+            </header>
+            <div className="surface stack-gap" aria-busy="true">
+              <div
+                className="skeleton skeleton--line"
+                style={{ width: "40%" }}
+              />
+              <div className="skeleton skeleton--btn" />
+            </div>
           </div>
-        </div>
+        </>
       }
     >
       <AccountAppInner />
