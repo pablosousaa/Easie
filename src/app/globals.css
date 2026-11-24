@@ -1175,6 +1175,16 @@ a.btn {
   border-radius: var(--radius-control);
 }
 
+.segmented--five {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.variation-switcher {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .segmented button {
   min-height: 36px;
   border: none;
@@ -1186,6 +1196,11 @@ a.btn {
   color: var(--text-secondary);
   cursor: pointer;
   transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.segmented--five button {
+  min-height: 44px;
+  font-variant-numeric: tabular-nums;
 }
 
 .segmented button.is-active {
