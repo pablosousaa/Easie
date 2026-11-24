@@ -11,6 +11,7 @@ import {
   subscribeStore,
 } from "@/lib/storage";
 import { formatDatePt } from "@/lib/format";
+import { PostsAreaChart } from "./PostsAreaChart";
 
 export function ReportsApp() {
   const { cloud, pushStore } = useAuth();
@@ -28,7 +29,6 @@ export function ReportsApp() {
   const counts = now ? countPosted(store, now) : { today: 0, week: 0, total: 0 };
   const days = now ? postsPerDay(store, 7, now) : [];
   const totals = sumResults(store.products);
-  const maxDay = Math.max(1, ...days.map((d) => d.count));
 
   const tracked = [...store.products].sort((a, b) =>
     (b.completedAt ?? b.createdAt).localeCompare(a.completedAt ?? a.createdAt),
@@ -92,24 +92,8 @@ export function ReportsApp() {
               </div>
             </div>
 
-            <div className="surface" style={{ marginTop: 12 }}>
-              <p className="helper" style={{ marginBottom: 12 }}>
-                Últimos 7 dias
-              </p>
-              <ul className="day-bars" aria-label="Posts por dia">
-                {days.map((d) => (
-                  <li key={d.date}>
-                    <span className="day-bars__label">{d.label}</span>
-                    <div className="day-bars__track" aria-hidden>
-                      <div
-                        className="day-bars__fill"
-                        style={{ width: `${(d.count / maxDay) * 100}%` }}
-                      />
-                    </div>
-                    <span className="day-bars__count">{d.count}</span>
-                  </li>
-                ))}
-              </ul>
+            <div className="surface posts-chart-surface" style={{ marginTop: 12 }}>
+              <PostsAreaChart days={days} />
             </div>
           </>
         )}
