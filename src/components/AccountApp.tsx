@@ -122,6 +122,42 @@ function AccountAppInner() {
     showToast("Backup importado");
   }
 
+  function historyProducts() {
+    return store.products.filter(
+      (p) => p.status === "done" || p.status === "archived",
+    );
+  }
+
+  async function handleClearHistory() {
+    const done = historyProducts();
+    if (done.length === 0) {
+      showToast("Histórico já está vazio", "error");
+      return;
+    }
+    const ok = window.confirm(
+      `Limpar o histórico desta conta? Isso remove ${done.length} produto(s) concluído(s) e as postagens ligadas a eles. A fila, grupos e modelos ficam intactos. Esta ação não pode ser desfeita.`,
+    );
+    if (!ok) return;
+    const typed = window.prompt("Digite LIMPAR para confirmar:");
+    if (typed !== "LIMPAR") {
+      showToast("Limpeza cancelada", "error");
+      return;
+    }
+
+    const historyIds = new Set(done.map((p) => p.id));
+    const next = {
+      ...store,
+      products: store.products.filter((p) => !historyIds.has(p.id)),
+      postings: store.postings.filter((p) => !historyIds.has(p.productId)),
+    };
+
+    setBusy(true);
+    replaceStore(next);
+    if (cloud) await pushStore(next);
+    setBusy(false);
+    showToast("Histórico limpo");
+  }
+
   async function handleDeleteAccount() {
     const ok = window.confirm(
       "Excluir permanentemente sua conta e todos os dados na nuvem? Esta ação não pode ser desfeita.",
@@ -407,20 +443,37 @@ function AccountAppInner() {
         <h2 id="danger-heading" className="section-title">
           Zona de risco
         </h2>
-        <div className="surface stack-gap">
-          <p className="helper" style={{ margin: 0 }}>
-            Apaga a conta na nuvem e todos os dados. Exporte um CSV antes se
-            quiser guardar.
-          </p>
-          <button
-            type="button"
-            className="btn btn-danger btn-block"
-            disabled={busy}
-            onClick={() => void handleDeleteAccount()}
-          >
-            <Trash2 size={18} aria-hidden />
-            Excluir conta
-          </button>
+        <div className="surface danger-zone">
+          <div className="danger-zone__block">
+            <p className="helper" style={{ margin: 0 }}>
+              Remove só o histórico desta conta (produtos concluídos e
+              postagens deles). Não apaga a conta, a fila, grupos nem modelos.
+            </p>
+            <button
+              type="button"
+              className="btn btn-danger btn-block"
+              disabled={busy || historyProducts().length === 0}
+              onClick={() => void handleClearHistory()}
+            >
+              <Trash2 size={18} aria-hidden />
+              Limpar histórico
+            </button>
+          </div>
+          <div className="danger-zone__block">
+            <p className="helper" style={{ margin: 0 }}>
+              Apaga a conta na nuvem e todos os dados. Exporte um CSV antes se
+              quiser guardar.
+            </p>
+            <button
+              type="button"
+              className="btn btn-danger btn-block"
+              disabled={busy}
+              onClick={() => void handleDeleteAccount()}
+            >
+              <Trash2 size={18} aria-hidden />
+              Excluir conta
+            </button>
+          </div>
         </div>
       </section>
     </div>

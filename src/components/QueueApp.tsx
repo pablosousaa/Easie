@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
-import { ArrowRight, History, Sparkles, Trash2 } from "lucide-react";
+import { ArrowRight, Sparkles, Trash2 } from "lucide-react";
 import { EmptyState } from "./EmptyState";
 import { useAuth } from "./AuthProvider";
 import { useToast } from "./ToastProvider";
@@ -62,10 +62,6 @@ export function QueueApp() {
       <section className="section">
         <div className="section-head">
           <h2 className="section-title">Na fila ({queue.length})</h2>
-          <Link href="/historico" className="btn btn-ghost btn-sm">
-            <History size={16} aria-hidden />
-            Histórico
-          </Link>
         </div>
 
         {queue.length === 0 ? (

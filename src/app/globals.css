@@ -1218,6 +1218,23 @@ a.btn {
   font-size: 11px;
 }
 
+.danger-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.danger-zone__block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.danger-zone__block + .danger-zone__block {
+  padding-top: 16px;
+  border-top: 1px solid var(--hairline);
+}
+
 .btn-danger {
   background: transparent;
   color: var(--color-danger-600);
@@ -1473,18 +1490,28 @@ a.btn {
 
 .saas-tab {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
   min-height: 44px;
+  padding-inline: 2px;
   color: var(--text-muted);
   text-decoration: none;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
+  line-height: 1.2;
   transition: color var(--dur-fast) var(--ease);
   position: relative;
+}
+
+.saas-tab > span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .saas-tab:hover {

@@ -1,5 +1,6 @@
-import { HistoryApp } from "@/components/HistoryApp";
+import { redirect } from "next/navigation";
 
+/** Legacy route: history browsing removed; clear history lives in Conta. */
 export default function HistoricoPage() {
-  return <HistoryApp />;
+  redirect("/conta");
 }

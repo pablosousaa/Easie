@@ -124,7 +124,7 @@ Local sem Postgres: omita `DATABASE_URL` postgres e use SQLite (Node 22.13+).
 4. (Opcional) Escolher sugestão em **Pegar produtos** e colar o link de afiliado
 5. Gerar textos em **Gerar** (produto entra na fila + checklist)
 6. Em **Fila** → checklist: abrir grupo, copiar, marcar postado
-7. Ver concluídos em **Histórico**
+7. Acompanhar posts em **Relatórios**; limpar histórico na zona de risco em **Conta**
 
 ## Fora do escopo
 
