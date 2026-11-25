@@ -664,7 +664,12 @@ a.btn {
   background: var(--paper-raised);
   border: 1px solid var(--hairline);
   border-left: 3px solid var(--neon);
-  animation: toast-in var(--dur-enter) var(--ease);
+  animation: toast-in 280ms var(--ease) both;
+}
+
+.toast--out {
+  animation: toast-out 180ms var(--ease) both;
+  pointer-events: none;
 }
 
 .toast--success {
@@ -705,11 +710,22 @@ a.btn {
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
   }
 }
 
@@ -1028,7 +1044,8 @@ a.btn {
   height: 100%;
   border-radius: inherit;
   background: var(--neon);
-  transition: width 200ms var(--ease);
+  transition: width 280ms var(--ease);
+  transform-origin: left center;
 }
 
 .checklist-card {
@@ -1172,6 +1189,10 @@ a.btn {
   border: 1px solid var(--hairline);
   background: transparent;
   color: var(--text-secondary);
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
 }
 
 .status-pill--pending {
@@ -1182,10 +1203,22 @@ a.btn {
   background: var(--neon);
   color: var(--on-neon);
   border-color: transparent;
+  animation: pill-pop 280ms var(--ease) both;
 }
 
 .status-pill--ignored {
   color: var(--text-muted);
+}
+
+@keyframes pill-pop {
+  from {
+    transform: scale(0.86);
+    opacity: 0.55;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .warn-banner {
@@ -1232,13 +1265,39 @@ a.btn {
   background: var(--paper-deep);
   border: 1px solid var(--hairline);
   border-radius: var(--radius-control);
+  position: relative;
 }
 
 .segmented--five {
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  --seg-index: 0;
+}
+
+.segmented__thumb {
+  display: none;
+}
+
+.segmented--five .segmented__thumb {
+  display: block;
+  position: absolute;
+  z-index: 0;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px - 16px) / 5);
+  border-radius: 6px;
+  background: var(--bg-muted);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translateX(
+    calc(var(--seg-index) * (100% + 4px))
+  );
+  transition: transform 220ms var(--ease);
+  pointer-events: none;
 }
 
 .segmented button {
+  position: relative;
+  z-index: 1;
   min-height: 36px;
   border: none;
   border-radius: 6px;
@@ -1248,10 +1307,7 @@ a.btn {
   font-weight: 500;
   color: var(--text-secondary);
   cursor: pointer;
-  transition:
-    background var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease),
-    box-shadow var(--dur-fast) var(--ease);
+  transition: color var(--dur-fast) var(--ease);
 }
 
 .segmented--five button {
@@ -1265,8 +1321,16 @@ a.btn {
 }
 
 .segmented button.is-active {
-  background: var(--bg-muted);
   color: var(--ink);
+}
+
+.segmented--five button.is-active {
+  background: transparent;
+  box-shadow: none;
+}
+
+.segmented:not(.segmented--five) button.is-active {
+  background: var(--bg-muted);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
@@ -1459,6 +1523,22 @@ a.btn {
 
 .posts-chart__line {
   filter: none;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 720ms var(--ease);
+}
+
+.posts-chart__area {
+  opacity: 0;
+  transition: opacity 480ms var(--ease) 120ms;
+}
+
+.posts-chart__canvas.is-drawn .posts-chart__line {
+  stroke-dashoffset: 0;
+}
+
+.posts-chart__canvas.is-drawn .posts-chart__area {
+  opacity: 1;
 }
 
 .posts-chart__dot {
@@ -1953,12 +2033,29 @@ a.btn {
   align-items: start;
 }
 
+.feed-row--enter {
+  --stagger: 0;
+  animation: feed-row-in 320ms var(--ease) both;
+  animation-delay: calc(var(--stagger) * 36ms);
+}
+
 .feed-row:last-child {
   border-bottom: none;
 }
 
 .feed-row--muted {
   opacity: 0.62;
+}
+
+@keyframes feed-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .feed-row__media {
@@ -2160,6 +2257,7 @@ a.btn {
   border: none;
   background: rgba(0, 0, 0, 0.55);
   cursor: pointer;
+  animation: sheet-backdrop-in 240ms var(--ease) both;
 }
 
 .templates-sheet__panel {
@@ -2170,7 +2268,7 @@ a.btn {
   overflow: auto;
   border-radius: var(--radius-panel) var(--radius-panel) 0 0;
   padding: 20px 16px calc(20px + var(--safe-bottom));
-  animation: templates-sheet-in var(--dur-enter) var(--ease) both;
+  animation: templates-sheet-in 320ms var(--ease) both;
 }
 
 @media (min-width: 640px) {
@@ -2180,14 +2278,52 @@ a.btn {
   }
 }
 
+@keyframes sheet-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @keyframes templates-sheet-in {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(24px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .toast--out,
+  .status-pill--posted,
+  .feed-row--enter,
+  .templates-sheet__backdrop,
+  .templates-sheet__panel,
+  .section,
+  .variation-card,
+  .saas-tab.is-active::after {
+    animation: none !important;
+  }
+
+  .segmented--five .segmented__thumb,
+  .progress-bar__fill,
+  .posts-chart__line,
+  .posts-chart__area {
+    transition: none !important;
+  }
+
+  .posts-chart__line {
+    stroke-dashoffset: 0;
+  }
+
+  .posts-chart__area {
+    opacity: 1;
   }
 }
 

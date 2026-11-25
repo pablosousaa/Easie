@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -430,7 +436,15 @@ export function ChecklistApp({ productId }: Props) {
                           className="segmented segmented--five"
                           role="radiogroup"
                           aria-labelledby={`var-pick-${posting.id}`}
+                          style={
+                            {
+                              "--seg-index": String(
+                                posting.variationIndex % 5,
+                              ),
+                            } as CSSProperties
+                          }
                         >
+                          <span className="segmented__thumb" aria-hidden />
                           {[0, 1, 2, 3, 4].map((i) => {
                             const selected =
                               (posting.variationIndex % 5) === i;
