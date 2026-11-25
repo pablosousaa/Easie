@@ -45,6 +45,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="pt-BR"
       className={`${instrumentSans.variable} ${cormorant.variable} ${spaceMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Static sheet: Turbopack/Lightning strips backdrop-filter from processed CSS */}
+        <link rel="stylesheet" href="/glass.css" />
+      </head>
       <body className="min-h-full">
         <ToastProvider>
           <AuthProvider>{children}</AuthProvider>
