@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore } from "react";
-import { FileUp, Pencil, Plus, Power, Trash2 } from "lucide-react";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { FileUp, Pencil, Plus, Power, Search, Trash2 } from "lucide-react";
+import { EmptyState } from "./EmptyState";
 import { useAuth } from "./AuthProvider";
 import { useToast } from "./ToastProvider";
 import type { FacebookGroup } from "@/lib/types";
@@ -21,6 +22,14 @@ const emptyForm = {
   rules: "",
 };
 
+function categoryKey(theme: string | undefined): string {
+  return (theme ?? "").trim();
+}
+
+function categoryLabel(key: string): string {
+  return key || "Sem categoria";
+}
+
 export function GroupsApp() {
   const { showToast } = useToast();
   const { cloud, pushStore } = useAuth();
@@ -34,12 +43,37 @@ export function GroupsApp() {
   const [errors, setErrors] = useState<Partial<typeof emptyForm>>({});
   const [importText, setImportText] = useState("");
   const [showImport, setShowImport] = useState(false);
+  const [query, setQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function persist(next: typeof store) {
     replaceStore(next);
     if (cloud) await pushStore(next);
   }
+
+  const categories = useMemo(() => {
+    const keys = new Set<string>();
+    for (const g of store.groups) keys.add(categoryKey(g.theme));
+    return [...keys].sort((a, b) =>
+      categoryLabel(a).localeCompare(categoryLabel(b), "pt-BR"),
+    );
+  }, [store.groups]);
+
+  const filteredGroups = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return store.groups.filter((g) => {
+      if (selectedCategory != null && categoryKey(g.theme) !== selectedCategory) {
+        return false;
+      }
+      if (!q) return true;
+      return (
+        g.name.toLowerCase().includes(q) ||
+        categoryLabel(categoryKey(g.theme)).toLowerCase().includes(q) ||
+        g.rules.toLowerCase().includes(q)
+      );
+    });
+  }, [store.groups, query, selectedCategory]);
 
   function startEdit(group: FacebookGroup) {
     setEditingId(group.id);
@@ -61,16 +95,16 @@ export function GroupsApp() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const nextErrors: Partial<typeof emptyForm> = {};
-    if (!form.name.trim()) nextErrors.name = "Informe o nome do grupo.";
-    if (!form.link.trim()) nextErrors.link = "Informe o link do grupo.";
+    if (!form.name.trim()) nextErrors.name = "Informe o nome do grupo";
+    if (!form.link.trim()) nextErrors.link = "Informe o link do grupo";
     else {
       try {
         const url = new URL(form.link.trim());
         if (!["http:", "https:"].includes(url.protocol)) {
-          nextErrors.link = "O link precisa começar com http ou https.";
+          nextErrors.link = "O link precisa começar com http ou https";
         }
       } catch {
-        nextErrors.link = "Link inválido.";
+        nextErrors.link = "Link inválido";
       }
     }
     setErrors(nextErrors);
@@ -92,7 +126,7 @@ export function GroupsApp() {
         ),
       };
       await persist(next);
-      showToast("Grupo atualizado.");
+      showToast("Grupo atualizado");
     } else {
       const group: FacebookGroup = {
         id: createId("grp"),
@@ -104,12 +138,13 @@ export function GroupsApp() {
         createdAt: nowIso(),
       };
       await persist({ ...store, groups: [...store.groups, group] });
-      showToast("Grupo cadastrado.");
+      showToast("Grupo cadastrado");
     }
     resetForm();
   }
 
   async function toggleActive(id: string) {
+    const group = store.groups.find((g) => g.id === id);
     const next = {
       ...store,
       groups: store.groups.map((g) =>
@@ -117,6 +152,7 @@ export function GroupsApp() {
       ),
     };
     await persist(next);
+    showToast(group?.active ? "Grupo desativado" : "Grupo ativado");
   }
 
   async function removeGroup(id: string) {
@@ -130,7 +166,7 @@ export function GroupsApp() {
     };
     await persist(next);
     if (editingId === id) resetForm();
-    showToast("Grupo removido.");
+    showToast("Grupo removido");
   }
 
   async function runImport(raw: string) {
@@ -144,18 +180,14 @@ export function GroupsApp() {
       (g) => !existingLinks.has(g.link.trim().toLowerCase()),
     );
     if (fresh.length === 0) {
-      showToast("Nenhum grupo novo (links já cadastrados).", "error");
+      showToast("Nenhum grupo novo", "error");
       return;
     }
     const added = draftsToGroups(fresh);
     await persist({ ...store, groups: [...store.groups, ...added] });
     setImportText("");
     setShowImport(false);
-    const skipNote =
-      parsed.skipped > 0 || fresh.length < parsed.groups.length
-        ? ` (${parsed.groups.length - fresh.length + parsed.skipped} ignorados)`
-        : "";
-    showToast(`${added.length} grupo(s) importado(s)${skipNote}.`);
+    showToast(`${added.length} grupo(s) importado(s)`);
   }
 
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -175,10 +207,149 @@ export function GroupsApp() {
       <header className="page-header">
         <h1 className="page-title">Grupos do Facebook</h1>
         <p className="page-sub">
-          Cadastre nome, link, categoria e regras. Desative grupos bloqueados sem apagar o
-          histórico. Importe por colagem ou planilha CSV.
+          Cadastre, filtre e ative/desative sem apagar o histórico
         </p>
       </header>
+
+      <section className="section" aria-labelledby="lista-grupos">
+        <div className="section-head">
+          <h2 id="lista-grupos" className="section-title">
+            Seus grupos ({store.groups.length})
+          </h2>
+        </div>
+
+        {store.groups.length === 0 ? (
+          <EmptyState title="Nenhum grupo ainda">
+            <p className="helper">Cadastre o primeiro abaixo para montar o checklist</p>
+          </EmptyState>
+        ) : (
+          <>
+            <div className="groups-toolbar">
+              <label className="groups-toolbar__search">
+                <span className="sr-only">Buscar grupos</span>
+                <Search size={16} strokeWidth={1.5} aria-hidden />
+                <input
+                  className="input"
+                  type="search"
+                  placeholder="Buscar grupo"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </label>
+              {categories.length > 1 ? (
+                <div
+                  className="chip-row chip-row--filter"
+                  role="group"
+                  aria-label="Filtrar por categoria"
+                >
+                  <button
+                    type="button"
+                    className={`chip${selectedCategory == null ? " is-active" : ""}`}
+                    aria-pressed={selectedCategory == null}
+                    onClick={() => setSelectedCategory(null)}
+                  >
+                    Todas
+                  </button>
+                  {categories.map((key) => {
+                    const selected = selectedCategory === key;
+                    return (
+                      <button
+                        key={key || "sem-categoria"}
+                        type="button"
+                        className={`chip${selected ? " is-active" : ""}`}
+                        aria-pressed={selected}
+                        onClick={() =>
+                          setSelectedCategory(selected ? null : key)
+                        }
+                      >
+                        {categoryLabel(key)}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+
+            {filteredGroups.length === 0 ? (
+              <EmptyState
+                title="Nenhum grupo neste filtro"
+                action={
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setQuery("");
+                      setSelectedCategory(null);
+                    }}
+                  >
+                    Limpar filtro
+                  </button>
+                }
+              >
+                <p className="helper">Tente outra busca ou categoria</p>
+              </EmptyState>
+            ) : (
+              <ul className="entity-list">
+                {filteredGroups.map((group) => (
+                  <li
+                    key={group.id}
+                    className={`entity-card entity-card--stack${group.active ? "" : " entity-card--muted"}`}
+                  >
+                    <div className="entity-card__body">
+                      <div className="entity-card__title-row">
+                        <h3 className="entity-card__title">{group.name}</h3>
+                        <span className={`badge${group.active ? "" : " badge--muted"}`}>
+                          {group.active ? "Ativo" : "Inativo"}
+                        </span>
+                      </div>
+                      {group.theme ? (
+                        <p className="helper">{group.theme}</p>
+                      ) : null}
+                      {group.rules ? (
+                        <p className="helper clamp-2">{group.rules}</p>
+                      ) : null}
+                      <a
+                        className="entity-card__link"
+                        href={group.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Abrir no Facebook
+                      </a>
+                    </div>
+                    <div className="entity-card__actions entity-card__actions--wrap">
+                      <button
+                        type="button"
+                        className={`btn btn-sm ${group.active ? "btn-secondary" : "btn-primary"}`}
+                        onClick={() => void toggleActive(group.id)}
+                      >
+                        <Power size={16} aria-hidden />
+                        {group.active ? "Desativar" : "Ativar"}
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        aria-label="Editar grupo"
+                        onClick={() => startEdit(group)}
+                      >
+                        <Pencil size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-btn icon-btn--danger"
+                        aria-label="Excluir grupo"
+                        onClick={() => void removeGroup(group.id)}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </section>
 
       <section className="section" aria-labelledby="import-grupos">
         <div className="section-head">
@@ -197,7 +368,7 @@ export function GroupsApp() {
           <div className="surface">
             <p className="helper">
               CSV com cabeçalho <code>nome,link,categoria,regras</code>, linhas{" "}
-              <code>Nome | https://… | categoria | regras</code>, ou um link por linha.
+              <code>Nome | https://… | categoria | regras</code>, ou um link por linha
             </p>
             <div className="field" style={{ marginTop: 12 }}>
               <label className="label" htmlFor="groups-import">
@@ -314,76 +485,6 @@ export function GroupsApp() {
             ) : null}
           </div>
         </form>
-      </section>
-
-      <section className="section" aria-labelledby="lista-grupos">
-        <h2 id="lista-grupos" className="section-title">
-          Seus grupos ({store.groups.length})
-        </h2>
-        {store.groups.length === 0 ? (
-          <div className="surface empty-state">
-            <p className="empty-state__title">Nenhum grupo ainda</p>
-            <p className="helper">Cadastre o primeiro acima para montar o checklist</p>
-          </div>
-        ) : (
-          <ul className="entity-list">
-            {store.groups.map((group) => (
-              <li
-                key={group.id}
-                className={`entity-card${group.active ? "" : " entity-card--muted"}`}
-              >
-                <div className="entity-card__body">
-                  <div className="entity-card__title-row">
-                    <h3 className="entity-card__title">{group.name}</h3>
-                    <span className={`badge${group.active ? "" : " badge--muted"}`}>
-                      {group.active ? "Ativo" : "Inativo"}
-                    </span>
-                  </div>
-                  {group.theme ? (
-                    <p className="helper">Categoria: {group.theme}</p>
-                  ) : null}
-                  {group.rules ? (
-                    <p className="helper clamp-2">{group.rules}</p>
-                  ) : null}
-                  <a
-                    className="entity-card__link"
-                    href={group.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Abrir no Facebook
-                  </a>
-                </div>
-                <div className="entity-card__actions">
-                  <button
-                    type="button"
-                    className="icon-btn"
-                    aria-label="Editar grupo"
-                    onClick={() => startEdit(group)}
-                  >
-                    <Pencil size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    className="icon-btn"
-                    aria-label={group.active ? "Desativar grupo" : "Ativar grupo"}
-                    onClick={() => void toggleActive(group.id)}
-                  >
-                    <Power size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    className="icon-btn icon-btn--danger"
-                    aria-label="Excluir grupo"
-                    onClick={() => void removeGroup(group.id)}
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
       </section>
     </div>
   );

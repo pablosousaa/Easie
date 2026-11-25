@@ -47,7 +47,7 @@ export function QueueApp() {
       postings: store.postings.filter((p) => p.productId !== productId),
     };
     await persist(next);
-    showToast("Produto removido da fila.");
+    showToast("Produto removido da fila");
   }
 
   return (

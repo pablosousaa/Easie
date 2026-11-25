@@ -93,7 +93,7 @@ export function GeneratorApp() {
 
       await persist(next);
       setJustGeneratedId(product.id);
-      showToast("Textos gerados — abra o checklist");
+      showToast("Textos gerados");
       requestAnimationFrame(() => {
         document.getElementById("variacoes")?.scrollIntoView({ behavior: "smooth" });
       });
@@ -122,7 +122,7 @@ export function GeneratorApp() {
           <div>
             <h1 className="page-title">Gerar</h1>
             <p className="page-sub">
-              Cadastre o produto e gere as 5 variações (OFERTA IMPERDÍVEL …)
+              Cole o link, preencha e gere as 5 variações
             </p>
           </div>
           <button
@@ -185,14 +185,31 @@ export function GeneratorApp() {
         ) : null}
 
         {store.variations.length === 0 ? (
-          <EmptyState title="Nenhum texto ainda">
+          <EmptyState
+            title="Ainda sem textos"
+            action={
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  document.getElementById("affiliateLink")?.focus();
+                  document
+                    .getElementById("affiliateLink")
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }}
+              >
+                <Sparkles size={16} aria-hidden />
+                Colar link acima
+              </button>
+            }
+          >
             <p className="helper">
-              Preencha o produto e toque em{" "}
+              Fluxo: <strong className="empty-state__em">colar link</strong> →{" "}
+              <strong className="empty-state__em">Preencher</strong> →{" "}
               <strong className="empty-state__em">Gerar textos</strong>
             </p>
             <p className="helper" style={{ marginTop: 8 }}>
-              <Sparkles size={14} className="inline-icon" aria-hidden />{" "}
-              As 5 variações (OFERTA IMPERDÍVEL, ACHADINHO DO DIA… ) aparecem aqui
+              As 5 variações aparecem aqui para copiar no checklist
             </p>
           </EmptyState>
         ) : (

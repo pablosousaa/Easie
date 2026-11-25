@@ -245,7 +245,7 @@ export function ChecklistApp({ productId }: Props) {
     await persist(next);
     if (status === "posted") showToast("Marcado como postado");
     if (status === "ignored") showToast("Grupo ignorado");
-    if (status === "pending") showToast("Marcado como não postado");
+    if (status === "pending") showToast("Voltou a pendente");
 
     const updated = next.products.find((p) => p.id === current.id);
     if (updated?.status === "done") {
@@ -322,9 +322,6 @@ export function ChecklistApp({ productId }: Props) {
                     </button>
                   ) : null}
                 </div>
-                <p className="helper">
-                  Selecione uma ou mais. Sem filtro, todos os grupos aparecem.
-                </p>
                 <div
                   className="chip-row chip-row--filter"
                   role="group"
@@ -391,10 +388,11 @@ export function ChecklistApp({ productId }: Props) {
                   className={`checklist-card${done ? " checklist-card--done" : ""}`}
                 >
                   <div className="checklist-card__head">
-                    <div>
+                    <div className="checklist-card__titles">
                       <h3 className="entity-card__title">{group.name}</h3>
-                      <p className="helper">
-                        Categoria: {categoryLabel(categoryKey(group.theme))}
+                      <p className="helper checklist-card__meta">
+                        {categoryLabel(categoryKey(group.theme))}
+                        {group.rules ? ` · ${group.rules}` : ""}
                       </p>
                     </div>
                     <span className={`status-pill status-pill--${posting.status}`}>
@@ -402,32 +400,32 @@ export function ChecklistApp({ productId }: Props) {
                     </span>
                   </div>
 
-                  {group.rules ? (
-                    <p className="helper clamp-2">Regras: {group.rules}</p>
-                  ) : null}
-
                   {guard.blocked && posting.status === "pending" ? (
-                    <p className="warn-banner" role="status">
-                      Já postado neste grupo em {formatDateTimePt(guard.lastPostedAt)}.
-                      Janela: {prepared.settings.repostWindowDays} dias (~
-                      {guard.daysLeft} restantes).
+                    <p className="warn-banner warn-banner--compact" role="status">
+                      Já postado em {formatDateTimePt(guard.lastPostedAt)} (~
+                      {guard.daysLeft}d na janela)
                     </p>
                   ) : null}
 
                   {!done ? (
                     <>
                       <div className="variation-switcher">
-                        <p
-                          className="label"
-                          id={`var-pick-${posting.id}`}
-                        >
-                          Variação
-                          {(() => {
-                            const idx = posting.variationIndex % Math.max(variations.length, 5);
-                            const name = variations[idx]?.label?.trim();
-                            return name ? ` · ${name}` : "";
-                          })()}
-                        </p>
+                        <div className="variation-switcher__head">
+                          <p
+                            className="label"
+                            id={`var-pick-${posting.id}`}
+                          >
+                            {(() => {
+                              const idx =
+                                posting.variationIndex %
+                                Math.max(variations.length, 5);
+                              const name = variations[idx]?.label?.trim();
+                              return name
+                                ? `Variação ${(idx % 5) + 1} · ${name}`
+                                : `Variação ${(posting.variationIndex % 5) + 1}`;
+                            })()}
+                          </p>
+                        </div>
                         <div
                           className="segmented segmented--five"
                           role="radiogroup"
@@ -460,15 +458,14 @@ export function ChecklistApp({ productId }: Props) {
                           })}
                         </div>
                       </div>
-                      <label className="label" htmlFor={`var-${posting.id}`}>
-                        Texto sugerido (variação{" "}
-                        {(posting.variationIndex % 5) + 1})
+                      <label className="sr-only" htmlFor={`var-${posting.id}`}>
+                        Texto da variação {(posting.variationIndex % 5) + 1}
                       </label>
                       <textarea
                         id={`var-${posting.id}`}
                         key={`${posting.id}-v${posting.variationIndex % 5}`}
                         className="textarea textarea--compact"
-                        rows={4}
+                        rows={3}
                         value={textForPosting(posting)}
                         onChange={(e) => {
                           const text = e.target.value;

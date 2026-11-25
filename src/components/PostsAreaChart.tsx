@@ -7,6 +7,8 @@ type Props = {
   days: DayBucket[];
   /** Accessible name for the chart. */
   label?: string;
+  /** Shown in the chart head (e.g. 7 or 30). */
+  rangeDays?: number;
 };
 
 type Point = {
@@ -53,21 +55,29 @@ function buildPath(points: Point[], close: boolean): string {
   return d;
 }
 
-export function PostsAreaChart({ days, label = "Posts por dia" }: Props) {
+export function PostsAreaChart({
+  days,
+  label = "Posts por dia",
+  rangeDays,
+}: Props) {
   const gradId = useId().replace(/:/g, "");
   const [active, setActive] = useState<number | null>(null);
+  const rangeLabel = rangeDays ?? days.length;
 
-  const { points, maxCount } = useMemo(() => {
-    const max = Math.max(1, ...days.map((d) => d.count));
+  const { points, maxCount, peakIndex, rawMax } = useMemo(() => {
+    const raw = Math.max(0, ...days.map((d) => d.count));
+    const max = Math.max(1, raw);
     const innerW = W - PAD.left - PAD.right;
     const innerH = H - PAD.top - PAD.bottom;
     const n = Math.max(1, days.length - 1);
+    let peak = 0;
     const pts: Point[] = days.map((d, i) => {
+      if (d.count > days[peak].count) peak = i;
       const x = PAD.left + (i / n) * innerW;
       const y = PAD.top + innerH * (1 - d.count / max);
       return { ...d, x, y };
     });
-    return { points: pts, maxCount: max };
+    return { points: pts, maxCount: max, peakIndex: peak, rawMax: raw };
   }, [days]);
 
   const linePath = useMemo(() => buildPath(points, false), [points]);
@@ -81,10 +91,24 @@ export function PostsAreaChart({ days, label = "Posts por dia" }: Props) {
   return (
     <div className="posts-chart">
       <div className="posts-chart__head">
-        <p className="posts-chart__range">Últimos 7 dias</p>
-        <p className="posts-chart__meta" aria-hidden>
-          Pico {maxCount}
-        </p>
+        <p className="posts-chart__range">Últimos {rangeLabel} dias</p>
+        <button
+          type="button"
+          className="posts-chart__meta posts-chart__peak"
+          onClick={() => {
+            if (rawMax > 0) setActive(peakIndex);
+          }}
+          aria-label={
+            rawMax > 0
+              ? `Dia de pico: ${points[peakIndex]?.label ?? ""}, ${rawMax} posts`
+              : "Sem posts no período"
+          }
+          disabled={rawMax === 0}
+        >
+          {rawMax > 0
+            ? `Pico ${rawMax}${points[peakIndex] ? ` · ${points[peakIndex].label}` : ""}`
+            : "Sem posts"}
+        </button>
       </div>
 
       <div
@@ -147,6 +171,11 @@ export function PostsAreaChart({ days, label = "Posts por dia" }: Props) {
             const hitW = points.length === 1 ? 48 : slot;
             const hitX =
               points.length === 1 ? p.x - hitW / 2 : p.x - slot / 2;
+            const showTick =
+              points.length <= 10 ||
+              i === 0 ||
+              i === points.length - 1 ||
+              i % Math.ceil(points.length / 7) === 0;
             return (
               <g key={p.date}>
                 <circle
@@ -159,14 +188,16 @@ export function PostsAreaChart({ days, label = "Posts por dia" }: Props) {
                   cy={p.y}
                   r={active === i ? 4.5 : 0}
                 />
-                <text
-                  className="posts-chart__tick"
-                  x={p.x}
-                  y={H - 10}
-                  textAnchor="middle"
-                >
-                  {p.label}
-                </text>
+                {showTick ? (
+                  <text
+                    className="posts-chart__tick"
+                    x={p.x}
+                    y={H - 10}
+                    textAnchor="middle"
+                  >
+                    {p.label}
+                  </text>
+                ) : null}
                 <rect
                   className="posts-chart__hit"
                   x={hitX}

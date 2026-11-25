@@ -78,7 +78,7 @@ function AccountAppInner() {
       setError(err);
       return;
     }
-    showToast("Login ok — dados na nuvem");
+    showToast("Login ok");
     router.replace(nextPath);
   }
 
@@ -90,7 +90,7 @@ function AccountAppInner() {
     };
     replaceStore(next);
     if (cloud) await pushStore(next);
-    showToast("Janela de re-post salva");
+    showToast("Preferência salva");
   }
 
   async function handleLogout() {
@@ -103,7 +103,7 @@ function AccountAppInner() {
     const csv = exportStoreToCsv(store);
     const stamp = new Date().toISOString().slice(0, 10);
     downloadTextFile(`easie-backup-${stamp}.csv`, csv, "text/csv;charset=utf-8");
-    showToast("Backup CSV baixado");
+    showToast("Backup baixado");
   }
 
   async function handleImportFile(file: File) {
@@ -354,104 +354,104 @@ function AccountAppInner() {
         </div>
       </section>
 
-      <section className="section" aria-labelledby="backup-heading">
-        <h2 id="backup-heading" className="section-title">
-          Backup CSV
+      <section className="section prefs-section" aria-labelledby="prefs-heading">
+        <h2 id="prefs-heading" className="section-title">
+          Preferências
         </h2>
-        <div className="surface stack-gap">
-          <p className="helper" style={{ margin: 0 }}>
-            Exporte para trocar de aparelho. Importe o mesmo arquivo para
-            restaurar na conta.
-          </p>
-          <button
-            type="button"
-            className="btn btn-secondary btn-block"
-            onClick={handleExport}
-          >
-            <Download size={18} aria-hidden />
-            Exportar CSV
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary btn-block"
-            onClick={() => fileRef.current?.click()}
-          >
-            <Upload size={18} aria-hidden />
-            Importar CSV
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".csv,text/csv"
-            className="sr-only"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              e.target.value = "";
-              if (file) void handleImportFile(file);
-            }}
-          />
-        </div>
-      </section>
-
-      <section className="section" aria-labelledby="settings-heading">
-        <h2 id="settings-heading" className="section-title">
-          Re-post
-        </h2>
-        <div className="surface">
-          <div className="field">
-            <label className="label" htmlFor="repost-days">
-              Dias mínimos entre o mesmo produto no mesmo grupo
-            </label>
+        <div className="surface prefs-panel stack-gap">
+          <div className="prefs-panel__block">
+            <p className="prefs-panel__label">Backup CSV</p>
+            <p className="helper" style={{ margin: 0 }}>
+              Exporte para trocar de aparelho. Importe o mesmo arquivo para
+              restaurar
+            </p>
+            <div className="prefs-panel__actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleExport}
+              >
+                <Download size={18} aria-hidden />
+                Exportar
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => fileRef.current?.click()}
+              >
+                <Upload size={18} aria-hidden />
+                Importar
+              </button>
+            </div>
             <input
-              id="repost-days"
-              className="input"
-              type="number"
-              min={1}
-              max={90}
-              value={store.settings.repostWindowDays}
+              ref={fileRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="sr-only"
               onChange={(e) => {
-                const value = Number.parseInt(e.target.value, 10);
-                replaceStore({
-                  ...store,
-                  settings: {
-                    repostWindowDays: Number.isFinite(value) ? value : 7,
-                  },
-                });
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) void handleImportFile(file);
               }}
             />
           </div>
-          <div className="actions">
+
+          <div className="prefs-panel__block">
+            <p className="prefs-panel__label">Re-post</p>
+            <div className="field" style={{ marginTop: 0 }}>
+              <label className="label" htmlFor="repost-days">
+                Dias mínimos entre o mesmo produto no mesmo grupo
+              </label>
+              <input
+                id="repost-days"
+                className="input"
+                type="number"
+                min={1}
+                max={90}
+                value={store.settings.repostWindowDays}
+                onChange={(e) => {
+                  const value = Number.parseInt(e.target.value, 10);
+                  replaceStore({
+                    ...store,
+                    settings: {
+                      repostWindowDays: Number.isFinite(value) ? value : 7,
+                    },
+                  });
+                }}
+              />
+            </div>
             <button
               type="button"
-              className="btn btn-secondary btn-block"
+              className="btn btn-secondary"
               onClick={() => void saveWindow()}
             >
-              Salvar preferência
+              Salvar
             </button>
           </div>
+
+          <Link href="/relatorios" className="btn btn-ghost">
+            <BarChart3 size={18} aria-hidden />
+            Ver relatórios
+          </Link>
         </div>
       </section>
 
-      <section className="section">
-        <Link href="/relatorios" className="btn btn-secondary btn-block">
-          <BarChart3 size={18} aria-hidden />
-          Ver relatórios
-        </Link>
-      </section>
-
-      <section className="section" aria-labelledby="danger-heading">
-        <h2 id="danger-heading" className="section-title">
+      <section
+        className="section danger-section"
+        aria-labelledby="danger-heading"
+      >
+        <h2 id="danger-heading" className="section-title danger-section__title">
           Zona de risco
         </h2>
         <div className="surface danger-zone">
           <div className="danger-zone__block">
             <p className="helper" style={{ margin: 0 }}>
-              Remove só o histórico desta conta (produtos concluídos e
-              postagens deles). Não apaga a conta, a fila, grupos nem modelos.
+              Remove só o histórico (produtos concluídos e postagens). Fila,
+              grupos e modelos ficam
             </p>
             <button
               type="button"
-              className="btn btn-danger btn-block"
+              className="btn btn-secondary btn-block"
               disabled={busy || historyProducts().length === 0}
               onClick={() => void handleClearHistory()}
             >
@@ -459,10 +459,9 @@ function AccountAppInner() {
               Limpar histórico
             </button>
           </div>
-          <div className="danger-zone__block">
+          <div className="danger-zone__block danger-zone__block--critical">
             <p className="helper" style={{ margin: 0 }}>
-              Apaga a conta na nuvem e todos os dados. Exporte um CSV antes se
-              quiser guardar.
+              Apaga a conta na nuvem e todos os dados. Exporte um CSV antes
             </p>
             <button
               type="button"
