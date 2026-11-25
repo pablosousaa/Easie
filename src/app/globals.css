@@ -43,9 +43,19 @@
   --radius-panel: 16px;
   --radius-pill: 999px;
 
-  --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-xl: none;
+  /* Quiet glass — frosted graphite, soft depth (Unslop: no colored glow) */
+  --glass-bg: rgba(32, 32, 36, 0.42);
+  --glass-bg-strong: rgba(12, 12, 14, 0.55);
+  --glass-bg-soft: rgba(32, 32, 36, 0.32);
+  --glass-blur: 24px;
+  --glass-blur-chrome: 32px;
+  --glass-saturate: 1.5;
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --glass-edge: rgba(255, 255, 255, 0.16);
+
+  --shadow-sm: 0 4px 20px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 10px 32px rgba(0, 0, 0, 0.42);
+  --shadow-xl: 0 18px 52px rgba(0, 0, 0, 0.5);
 
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --dur-fast: 140ms;
@@ -91,13 +101,93 @@ html {
 body {
   margin: 0;
   min-height: 100dvh;
-  background: var(--paper);
+  background-color: var(--paper);
+  /* Atmosphere for frost to catch — graphite wash + rare neon breath */
+  background-image:
+    radial-gradient(ellipse 90% 55% at 8% -5%, color-mix(in srgb, var(--neon) 11%, transparent), transparent 58%),
+    radial-gradient(ellipse 75% 50% at 92% 0%, rgba(255, 255, 255, 0.07), transparent 52%),
+    radial-gradient(ellipse 55% 45% at 70% 85%, rgba(255, 255, 255, 0.035), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 40% 110%, rgba(0, 0, 0, 0.45), transparent 60%);
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-body);
   font-size: var(--text-base);
   font-weight: 400;
   line-height: 1.5;
   letter-spacing: 0;
+}
+
+/* Shared frosted surface — quiet glass, not neon glow */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--hairline);
+  border-top-color: var(--glass-edge);
+  box-shadow: var(--glass-highlight), var(--shadow-sm);
+}
+
+.glass--chrome {
+  background: var(--glass-bg-strong);
+  box-shadow: var(--glass-highlight);
+}
+
+.glass--soft {
+  background: var(--glass-bg-soft);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .glass--chrome,
+  .glass--soft,
+  .surface,
+  .variation,
+  .entity-card,
+  .template-card,
+  .callout,
+  .stat-card,
+  .feed-list,
+  .toast,
+  .auth-card,
+  .saas-sidebar,
+  .saas-topbar,
+  .saas-bottom-nav,
+  .bottom-nav,
+  .templates-sheet__panel,
+  .trending-modal__panel,
+  .posts-chart-surface,
+  .segmented,
+  .checklist-card,
+  .saas-sidebar__user {
+    background: var(--paper-raised) !important;
+  }
+
+  .saas-sidebar,
+  .saas-topbar,
+  .saas-bottom-nav,
+  .bottom-nav {
+    background: var(--paper-deep) !important;
+  }
+
+  body {
+    background-image: none;
+  }
+
+  .saas-app::before {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section,
+  .variation,
+  .templates-sheet__panel,
+  .toast,
+  .product-form__details {
+    animation: none !important;
+  }
+
+  .saas-tab.is-active::after {
+    animation: none !important;
+  }
 }
 
 .page {
@@ -190,10 +280,11 @@ body {
 }
 
 .surface {
-  background: var(--paper-raised);
+  background: var(--glass-bg);
   border: 1px solid var(--hairline);
+  border-top-color: var(--glass-edge);
   border-radius: var(--radius);
-  box-shadow: none;
+  box-shadow: var(--glass-highlight), var(--shadow-sm);
   padding: 20px;
 }
 
@@ -497,9 +588,11 @@ a.btn {
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  background: var(--paper-raised);
+  background: var(--glass-bg);
   border: 1px solid var(--hairline);
+  border-top-color: var(--glass-edge);
   border-radius: var(--radius);
+  box-shadow: var(--glass-highlight), var(--shadow-sm);
   animation: fade-up var(--dur-enter) var(--ease) both;
 }
 
@@ -593,8 +686,9 @@ a.btn {
   z-index: 40;
   height: calc(var(--nav-height) + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
-  background: var(--paper-deep);
+  background: var(--glass-bg-strong);
   border-top: 1px solid var(--hairline);
+  box-shadow: var(--glass-highlight);
   display: flex;
 }
 
@@ -661,9 +755,11 @@ a.btn {
   gap: 12px;
   padding: 14px 16px;
   border-radius: var(--radius);
-  background: var(--paper-raised);
+  background: var(--glass-bg);
   border: 1px solid var(--hairline);
+  border-top-color: var(--glass-edge);
   border-left: 3px solid var(--neon);
+  box-shadow: var(--glass-highlight), var(--shadow-md);
   animation: toast-in 280ms var(--ease) both;
 }
 
@@ -735,8 +831,10 @@ a.btn {
   gap: 12px;
   padding: 16px;
   border: 1px solid var(--hairline);
+  border-top-color: var(--glass-edge);
   border-radius: var(--radius);
-  background: var(--paper-raised);
+  background: var(--glass-bg);
+  box-shadow: var(--glass-highlight), var(--shadow-sm);
 }
 
 .template-card--default {
@@ -820,8 +918,10 @@ a.btn {
   gap: 12px;
   padding: 16px;
   border-radius: var(--radius);
-  background: var(--paper-raised);
+  background: var(--glass-bg);
   border: 1px solid var(--hairline-strong);
+  border-top-color: var(--glass-edge);
+  box-shadow: var(--glass-highlight), var(--shadow-sm);
 }
 
 .callout--next {
@@ -923,9 +1023,11 @@ a.btn {
   justify-content: space-between;
   gap: 12px;
   padding: 16px;
-  background: var(--paper-raised);
+  background: var(--glass-bg);
   border: 1px solid var(--hairline);
+  border-top-color: var(--glass-edge);
   border-radius: var(--radius);
+  box-shadow: var(--glass-highlight), var(--shadow-sm);
 }
 
 .entity-card--stack {
@@ -1053,9 +1155,11 @@ a.btn {
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  background: var(--paper-raised);
+  background: var(--glass-bg);
   border: 1px solid var(--hairline);
+  border-top-color: var(--glass-edge);
   border-radius: var(--radius);
+  box-shadow: var(--glass-highlight), var(--shadow-sm);
 }
 
 .checklist-card--done {
@@ -1166,7 +1270,6 @@ a.btn {
     top: var(--topbar-height);
     z-index: 20;
     background: color-mix(in srgb, var(--paper) 92%, transparent);
-    backdrop-filter: blur(8px);
     margin-left: -16px;
     margin-right: -16px;
     padding-left: 16px;
@@ -1262,9 +1365,11 @@ a.btn {
   grid-template-columns: 1fr 1fr;
   gap: 4px;
   padding: 4px;
-  background: var(--paper-deep);
+  background: var(--glass-bg-strong);
   border: 1px solid var(--hairline);
+  border-top-color: var(--glass-edge);
   border-radius: var(--radius-control);
+  box-shadow: var(--glass-highlight);
   position: relative;
 }
 
@@ -1389,8 +1494,10 @@ a.btn {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  background: var(--paper-deep);
+  background: var(--glass-bg-strong);
   border-color: var(--hairline);
+  border-top-color: var(--glass-edge);
+  box-shadow: var(--glass-highlight);
 }
 
 .danger-zone__block {
@@ -1427,9 +1534,11 @@ a.btn {
 
 .stat-card {
   padding: 16px 12px;
-  background: var(--paper-raised);
+  background: var(--glass-bg);
   border: 1px solid var(--hairline);
+  border-top-color: var(--glass-edge);
   border-radius: var(--radius);
+  box-shadow: var(--glass-highlight), var(--shadow-sm);
   text-align: center;
 }
 
@@ -1453,8 +1562,10 @@ a.btn {
 /* ——— Relatórios: posts-per-day area chart (neon moment) ——— */
 .posts-chart-surface {
   padding: 16px 12px 12px;
-  background: var(--paper-deep);
+  background: var(--glass-bg);
   border-color: var(--hairline);
+  border-top-color: var(--glass-edge);
+  box-shadow: var(--glass-highlight), var(--shadow-sm);
 }
 
 .posts-chart {
@@ -1634,9 +1745,25 @@ a.btn {
 
 /* ——— App shell ——— */
 .saas-app {
+  position: relative;
+  isolation: isolate;
   min-height: 100dvh;
-  background: var(--paper);
+  background: transparent;
 }
+
+/* Mid-field wash so frosted panels have light to catch (not only corner glows) */
+.saas-app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 75% 60% at 58% 32%, color-mix(in srgb, var(--neon) 18%, transparent), transparent 64%),
+    radial-gradient(ellipse 55% 45% at 22% 58%, rgba(255, 255, 255, 0.08), transparent 58%),
+    radial-gradient(ellipse 50% 40% at 78% 68%, rgba(255, 255, 255, 0.055), transparent 52%);
+}
+
 
 .saas-app-loading {
   min-height: 100dvh;
@@ -1660,7 +1787,8 @@ a.btn {
   height: var(--topbar-height);
   padding: 0 16px;
   border-bottom: 1px solid var(--hairline);
-  background: var(--paper-deep);
+  background: var(--glass-bg-strong);
+  box-shadow: var(--glass-highlight);
   position: sticky;
   top: 0;
   z-index: 30;
@@ -1682,8 +1810,9 @@ a.btn {
   z-index: 40;
   height: calc(var(--nav-height) + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
-  background: var(--paper-deep);
+  background: var(--glass-bg-strong);
   border-top: 1px solid var(--hairline);
+  box-shadow: var(--glass-highlight);
   display: flex;
 }
 
@@ -1830,7 +1959,8 @@ a.btn {
     top: 0;
     height: 100dvh;
     border-right: 1px solid var(--hairline);
-    background: var(--paper-deep);
+    background: var(--glass-bg-strong);
+    box-shadow: var(--glass-highlight);
     padding: 20px 12px;
     gap: 24px;
   }
@@ -1896,8 +2026,10 @@ a.btn {
     margin: 0;
     padding: 12px;
     border-radius: var(--radius-control);
-    background: var(--paper-raised);
+    background: var(--glass-bg);
     border: 1px solid var(--hairline);
+    border-top-color: var(--glass-edge);
+    box-shadow: var(--glass-highlight);
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -1972,9 +2104,11 @@ a.btn {
   gap: 8px;
   min-height: 44px;
   padding: 0 12px;
-  background: var(--paper-raised);
+  background: var(--glass-bg-soft);
   border: 1px solid var(--hairline);
+  border-top-color: var(--glass-edge);
   border-radius: var(--radius-control);
+  box-shadow: var(--glass-highlight);
   color: var(--text-muted);
 }
 
@@ -2019,9 +2153,11 @@ a.btn {
   flex-direction: column;
   gap: 0;
   border: 1px solid var(--hairline);
+  border-top-color: var(--glass-edge);
   border-radius: var(--radius);
   overflow: hidden;
-  background: var(--paper-raised);
+  background: var(--glass-bg);
+  box-shadow: var(--glass-highlight), var(--shadow-sm);
 }
 
 .feed-row {
@@ -2268,6 +2404,10 @@ a.btn {
   overflow: auto;
   border-radius: var(--radius-panel) var(--radius-panel) 0 0;
   padding: 20px 16px calc(20px + var(--safe-bottom));
+  background: var(--glass-bg);
+  border: 1px solid var(--hairline);
+  border-top-color: var(--glass-edge);
+  box-shadow: var(--glass-highlight), var(--shadow-xl);
   animation: templates-sheet-in 320ms var(--ease) both;
 }
 
