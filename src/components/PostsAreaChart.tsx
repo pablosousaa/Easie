@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import type { DayBucket } from "@/lib/reports";
 
 type Props = {
@@ -32,7 +32,6 @@ function buildPath(points: Point[], close: boolean): string {
     return `M ${p.x} ${baseY} L ${p.x} ${p.y} L ${p.x} ${baseY} Z`;
   }
 
-  // Smooth monotone-ish cubic through points
   let d = `M ${points[0].x} ${points[0].y}`;
   for (let i = 0; i < points.length - 1; i++) {
     const p0 = points[i === 0 ? 0 : i - 1];
@@ -62,9 +61,24 @@ export function PostsAreaChart({
 }: Props) {
   const gradId = useId().replace(/:/g, "");
   const [active, setActive] = useState<number | null>(null);
+  const [drawn, setDrawn] = useState(false);
   const rangeLabel = rangeDays ?? days.length;
+  const drawKey = `${rangeLabel}:${days.map((d) => `${d.date}:${d.count}`).join("|")}`;
 
-  const { points, maxCount, peakIndex, rawMax } = useMemo(() => {
+  useEffect(() => {
+    setDrawn(false);
+    const reduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) {
+      setDrawn(true);
+      return;
+    }
+    const id = window.requestAnimationFrame(() => setDrawn(true));
+    return () => window.cancelAnimationFrame(id);
+  }, [drawKey]);
+
+  const { points, peakIndex, rawMax } = useMemo(() => {
     const raw = Math.max(0, ...days.map((d) => d.count));
     const max = Math.max(1, raw);
     const innerW = W - PAD.left - PAD.right;
@@ -77,7 +91,7 @@ export function PostsAreaChart({
       const y = PAD.top + innerH * (1 - d.count / max);
       return { ...d, x, y };
     });
-    return { points: pts, maxCount: max, peakIndex: peak, rawMax: raw };
+    return { points: pts, peakIndex: peak, rawMax: raw };
   }, [days]);
 
   const linePath = useMemo(() => buildPath(points, false), [points]);
@@ -112,7 +126,7 @@ export function PostsAreaChart({
       </div>
 
       <div
-        className="posts-chart__canvas"
+        className={`posts-chart__canvas${drawn ? " is-drawn" : ""}`}
         onMouseLeave={() => setActive(null)}
       >
         <svg
@@ -141,7 +155,6 @@ export function PostsAreaChart({
             </linearGradient>
           </defs>
 
-          {/* Baseline only — no grid clutter */}
           <line
             className="posts-chart__baseline"
             x1={PAD.left}
@@ -163,6 +176,7 @@ export function PostsAreaChart({
             strokeWidth={2.25}
             strokeLinecap="round"
             strokeLinejoin="round"
+            pathLength={1}
           />
 
           {points.map((p, i) => {

@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -16,6 +17,7 @@ type ToastItem = {
   id: string;
   message: string;
   kind: ToastKind;
+  leaving?: boolean;
 };
 
 type ToastContextValue = {
@@ -24,19 +26,44 @@ type ToastContextValue = {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
+const EXIT_MS = 180;
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const timers = useRef<Map<string, number>>(new Map());
 
-  const dismiss = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+  const clearTimer = useCallback((id: string) => {
+    const t = timers.current.get(id);
+    if (t != null) {
+      window.clearTimeout(t);
+      timers.current.delete(id);
+    }
   }, []);
+
+  const removeNow = useCallback((id: string) => {
+    clearTimer(id);
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, [clearTimer]);
+
+  const dismiss = useCallback(
+    (id: string) => {
+      clearTimer(id);
+      setToasts((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, leaving: true } : t)),
+      );
+      const exitTimer = window.setTimeout(() => removeNow(id), EXIT_MS);
+      timers.current.set(id, exitTimer);
+    },
+    [clearTimer, removeNow],
+  );
 
   const showToast = useCallback(
     (message: string, kind: ToastKind = "success") => {
       const id = crypto.randomUUID();
       setToasts((prev) => [...prev.slice(-2), { id, message, kind }]);
       if (kind === "success") {
-        window.setTimeout(() => dismiss(id), 3200);
+        const auto = window.setTimeout(() => dismiss(id), 3200);
+        timers.current.set(id, auto);
       }
     },
     [dismiss],
@@ -51,7 +78,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`toast toast--${toast.kind}`}
+            className={`toast toast--${toast.kind}${toast.leaving ? " toast--out" : ""}`}
             role={toast.kind === "error" ? "alert" : "status"}
           >
             <p className="toast__message">{toast.message}</p>

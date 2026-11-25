@@ -1,8 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+} from "react";
 import { useRouter } from "next/navigation";
-import { useSyncExternalStore } from "react";
 import {
   ExternalLink,
   EyeOff,
@@ -389,13 +395,18 @@ export function TrendingApp() {
           </EmptyState>
         ) : (
           <ul className="feed-list">
-            {visibleItems.map((item) => {
+            {visibleItems.map((item, index) => {
               const taken = store.trendingTakenIds.includes(item.mlItemId);
               const hidden = store.trendingHiddenIds.includes(item.mlItemId);
               return (
                 <li
                   key={item.id}
-                  className={`feed-row${hidden ? " feed-row--muted" : ""}`}
+                  className={`feed-row feed-row--enter${hidden ? " feed-row--muted" : ""}`}
+                  style={
+                    {
+                      "--stagger": String(Math.min(index, 12)),
+                    } as CSSProperties
+                  }
                 >
                   <div className="feed-row__media" aria-hidden>
                     {item.thumbnail ? (
